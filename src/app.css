@@ -1,5 +1,31 @@
+@import "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap";
 @import 'tailwindcss';
 
 html {
     color-scheme: light dark;
+    font-family: "Roboto Mono", monospace;
+    overscroll-behavior: none;
+    @apply text-base
+}
+
+.bg-splash-screen {
+    background: linear-gradient(325deg,#dd17c6,#7c07f5);
+    background-size: 120% 120%;
+    animation: gradient-animation 12s ease infinite;
+}
+
+@keyframes bg-splash-screen {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@theme {
+    --top-bar: 36px;
 }

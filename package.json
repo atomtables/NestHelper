@@ -7,7 +7,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare": "svelte-kit sync || echo ''"
+    "prepare": "svelte-kit sync || echo ''",
+    "tauri": "tauri"
   },
   "devDependencies": {
     "@sveltejs/kit": "^2.22.0",
@@ -21,6 +22,8 @@
   },
   "dependencies": {
     "@sveltejs/adapter-static": "^3.0.9",
-    "@tauri-apps/api": "^2.7.0"
+    "@sveltejs/enhanced-img": "^0.7.1",
+    "@tauri-apps/api": "^2.7.0",
+    "@tauri-apps/plugin-store": "^2.3.0"
   }
 }
