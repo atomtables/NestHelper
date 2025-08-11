@@ -6,7 +6,7 @@ mod commands;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![commands::verifySSH])
+        .invoke_handler(tauri::generate_handler![commands::run_ssh_flow])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

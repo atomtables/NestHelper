@@ -31,10 +31,10 @@ export async function loadAll() {
         if (state && typeof state === 'object' && 'set' in state && 'value' in state) {
             if (state.persistent) {
                 const store = await loadStore(`${state.persistent}.json`);
-                // if (store) {
-                //     state.value = Object.fromEntries(await store.entries())
-                //     state.set = true;
-                // }
+                if (store) {
+                    state.value = Object.fromEntries(await store.entries())
+                    state.set = true;
+                }
             }
         }
     }
@@ -52,15 +52,16 @@ export async function load(store: string) {
     await tick();
 }
 
-export async function save(store: string) {
+export async function save(state: any) {
     await tick();
-    const state: any = Array(exports).find((s: any) => typeof s === 'object' && 'persistent' in s && s.persistent === store);
     if (state && state.persistent) {
         const storeData = await loadStore(`${state.persistent}.json`);
         if (storeData) {
             for (const [key, value] of Object.entries(state.value || {})) {
+                console.log(key, value)
                 await storeData.set(key, value);
             }
         }
+        console.log(await storeData.entries())
     }
 }

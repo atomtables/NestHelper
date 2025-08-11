@@ -1,14 +1,14 @@
 <script>
-    import {goto} from "$app/navigation";
-    import {cubicOut, quintOut} from "svelte/easing";
+    import {quintOut} from "svelte/easing";
     import {onMount, tick} from "svelte";
-    import {fade, scale, slide} from "svelte/transition";
+    import {scale, slide} from "svelte/transition";
     import image from "$lib/assets/favicon.png"
     import Button from "$lib/components/Button.svelte";
     import Input from "$lib/components/Input.svelte";
     import {auth, save} from "$lib/state/states.svelte.js";
     import Flow from "$lib/components/Flow.svelte";
-    import { emit } from '@tauri-apps/api/event';
+    import {Channel, invoke} from "@tauri-apps/api/core";
+    import {goto} from "$app/navigation";
 
     let showChildren = $state(false);
     let screen = $state(0);
@@ -17,12 +17,12 @@
     let disclaimer = $state(false);
 
     function scaleCircle(node, { delay = 0, duration = 700, easing = quintOut }) {
+        // noinspection JSUnusedGlobalSymbols
         return {
             delay,
             duration,
             easing,
             css: t => {
-                // mask image
                 return `
                     transform: scale(${t * 1.5});
                     border-radius: 1000px;
@@ -34,20 +34,69 @@
         setTimeout(() => showChildren = true, 700)
     })
 
+    let result = $state();
+    let tasks = $state([
+        { command: null, task: "Connecting via SSH" },
+        { command: "nest caddy list", task: "Getting connected domains" },
+        { command: "cat Caddyfile", task: "Getting Caddyfile" },
+        { command: "nest resources", task: "Getting nest resources" },
+        { command: null, frontend: true, task: "Finalising setup" }
+    ])
+    let currentTask = $state(0);
+
     let handler = async () => {
-        if (screen === 1) {
+        if (screen === 2) {
+            await tick();
             if (!username || !disclaimer) {
                 return;
             }
-            auth.username = username;
-            await save("auth");
+            auth.value.username = username;
+            await save(auth);
+            await tick();
+
+            const onEvent = new Channel();
+            onEvent.onmessage = (message) => {
+                if (message.event === 'started') {
+                    tasks[currentTask].state = "ongoing";
+                    tasks[currentTask].output = ""
+                } else if (message.event === 'output') {
+                    if (message.data.file === 'stderr') {
+                        tasks[currentTask].output += `<div class="text-red-500">${message.data.output}</div>`;
+                    } else {
+                        tasks[currentTask].output += `<div>${message.data.output}</div>`;
+                    }
+                } else if (message.event === 'nextStage') {
+                    tasks[currentTask].state = "done";
+                    currentTask++;
+                    if (tasks[currentTask]) {
+                        tasks[currentTask].state = "ongoing"
+                        tasks[currentTask].output = "";
+                    }
+                } else if (message.event === 'error') {
+                    tasks[currentTask].state = "failed";
+                } else if (message.event === 'finished') {
+                    tasks[currentTask].state = "done";
+                } else {
+                    console.warn("Unknown event:", message);
+                }
+                console.log(message);
+            };
+            invoke("run_ssh_flow", {
+                username: auth.value.username,
+                commands: tasks.map(t => t.command).filter(c => c),
+                onEvent
+            }).then(r => result = r);
+            onEvent.send();
+        } else if (screen === 3) {
+            showChildren = false;
+            setTimeout(() => goto("/main"), 1000);
         }
     }
 </script>
 
-<div class="h-full w-full bg-purple-200 dark:bg-purple-900 overflow-y-scroll" in:scaleCircle>
+<div class="h-full w-full bg-purple-200 dark:bg-purple-900 overflow-y-scroll" in:scaleCircle out:scaleCircle>
     {#if showChildren}
-        <div class="flex flex-col max-w-4xl mx-auto h-full items-start justify-center p-5 gap-4 overflow-y-scroll" in:scale>
+        <div class="flex flex-col max-w-4xl mx-auto h-full items-start justify-center p-5 gap-4 overflow-y-scroll" transition:scale>
             <div class="flex flex-row items-center gap-4 justify-center backdrop-blur-md">
                 <img src={image} class="h-16 w-16" alt="app icon">
                 <div class="text-4xl font-sans">NestHelper</div>
@@ -95,7 +144,9 @@
                     </div>
                 </div>
             {:else if screen === 2}
-                <Flow />
+                <div transition:slide class="w-full">
+                    <Flow bind:tasks />
+                </div>
             {/if}
             <div class="flex flex-row justify-between w-full items-center">
                 <Button
@@ -103,7 +154,7 @@
                     disabled={screen === 0}
                 >Back</Button>
                 <Button
-                    onclick={async () => {await handler(); await tick(); screen++}}
+                    onclick={async () => {await tick(); screen++; await handler(); await tick();}}
                     disabled={
                         screen >= 5 ||
                         (screen === 1 && (!username || !disclaimer))

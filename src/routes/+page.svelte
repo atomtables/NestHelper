@@ -1,6 +1,6 @@
 <script lang="ts">
     import Spinner from "$lib/components/Spinner.svelte";
-    import {auth, error, loadAll} from "$lib/state/states.svelte.ts";
+    import {appReady, auth, error, loadAll} from "$lib/state/states.svelte.ts";
     import {onMount, tick} from "svelte";
     import { load } from '@tauri-apps/plugin-store';
     import {goto} from "$app/navigation";
@@ -11,10 +11,15 @@
     onMount(async () => {
         try {
             await loadAll();
+            appReady.value = true;
+            $state.snapshot(auth)
+            $state.snapshot(appReady)
 
-            if (!auth.username) {
+            if (!auth.value.username) {
                 await tick();
-                await goto("/onboarding");
+                setTimeout(() => {
+                    goto("/onboarding");
+                }, 2000)
                 return;
             }
             await goto("/main")

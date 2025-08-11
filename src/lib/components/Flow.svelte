@@ -1,63 +1,57 @@
 <script>
-import Spinner from "$lib/components/Spinner.svelte";
-import {draw, fade} from "svelte/transition";
-import {onMount} from "svelte";
-import {quintIn} from "svelte/easing";
+    import Spinner from "$lib/components/Spinner.svelte";
+    import {draw, fade, scale} from "svelte/transition";
+    import {onMount} from "svelte";
+    import {cubicOut, quartInOut, quintIn, quintInOut} from "svelte/easing";
+    import Button from "$lib/components/Button.svelte";
 
-let data = [
-    {
-        state: "done",
-        task: "logging in",
-        output: "emulated output"
-    },
-    {
-        state: "ongoing",
-        task: "logging in",
-        output: "emulated output"
-    },
-    {
-        state: "inactive",
-        task: "logging in",
-        output: "emulated output"
-    },
-    {
-        state: "inactive",
-        task: "logging in",
-        output: "emulated output"
-    },
-    {
-        state: "inactive",
-        task: "logging in",
-        output: "emulated output"
-    },
-]
+    let { tasks = $bindable() } = $props();
 
-onMount(() => {
-    setTimeout(() => {
-        data[1].state = "done"
-        data[2].state = "ongoing"
-    }, 1000)
-})
+    let popShows = $state({})
+    function hideAll(i) {
+        let val = popShows[i];
+        popShows = {};
+        popShows[i] = val;
+    }
 </script>
 
-<div class="flex flex-col items-start justify-center gap-4 p-4">
-    {#each data as task}
-        <div class="flex flex-row items-center gap-4">
-            <div class="*:absolute w-8 h-8">
-                {#if task.state === 'inactive'}
-                    {@render inactive()}
-                {:else if task.state === "ongoing"}
-                    {@render empty()}
-                {:else if task.state === 'done'}
-                    {@render check()}
-                {:else if task.state === 'failed'}
-                    {@render failed()}
-                {/if}
+<div class="flex flex-col items-start justify-center gap-4 p-2 pr-4 w-full">
+    {#each tasks as task, i}
+        <div class="relative flex flex-row items-center justify-between gap-4 w-full dark:bg-purple-800 bg-purple-300 p-2 rounded-full">
+            <div class="flex flex-row items-center gap-4">
+                <div class="*:absolute w-8 h-8">
+                    {#if task.state === "ongoing"}
+                        {@render empty()}
+                    {:else if task.state === 'done'}
+                        {@render check()}
+                    {:else if task.state === 'failed'}
+                        {@render failed()}
+                    {:else}
+                        {@render inactive()}
+                    {/if}
+                </div>
+                <div>{task.task}</div>
             </div>
-            <div>{task.task}</div>
+            <Button class="p-2 rounded-full" onclick={() => (popShows[i] = !popShows[i], hideAll(i))}>
+                Output
+            </Button>
+            {#if window.matchMedia("(min-width: 40rem)").matches && popShows[i]}
+                <div class="absolute flex flex-col overflow-scroll scroll-auto bg-neutral-200 dark:bg-neutral-900 right-28 h-48 w-96 lg:w-4/5 p-5 z-50 shadow-2xl origin-right" transition:scale={{duration: 200, easing: quartInOut}}>
+                    {@html task.output}
+                </div>
+            {/if}
         </div>
     {/each}
 </div>
+
+{#if Object.entries(popShows).find(([k, v]) => v) && !window.matchMedia("(min-width: 40rem)").matches}
+    <div class="absolute p-8 top-0 right-0 left-0 bottom-0" onclick={() => popShows = {}}>
+        <div class="p-5 flex flex-col overflow-scroll scroll-auto h-full w-full z-50 shadow-2xl bg-neutral-200 dark:bg-neutral-900" transition:scale={{duration: 200, easing: quartInOut}} onclick={(e) => e.stopPropagation()}>
+            {@html tasks[Object.entries(popShows).find(([k, v]) => v)[0]].output}
+        </div>
+    </div>
+{/if}
+
 <!--out:fade={{duration: 200}} in:fade={{delay: 200}}-->
 {#snippet inactive()}
     <div transition:fade={{easing: quintIn}} class="w-8 h-8 rounded-full border-3 border-blue-500 dark:border-blue-500 animate-pulse flex items-center justify-center transition-colors">
