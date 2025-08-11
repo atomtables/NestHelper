@@ -4,6 +4,7 @@
     import {onMount} from "svelte";
     import {cubicOut, quartInOut, quintIn, quintInOut} from "svelte/easing";
     import Button from "$lib/components/Button.svelte";
+    import {emit} from "@tauri-apps/api/event";
 
     let { tasks = $bindable() } = $props();
 
@@ -13,13 +14,62 @@
         popShows = {};
         popShows[i] = val;
     }
+
+    export const start = (channel, invoker) => {
+        tasks = tasks.map((task) => ({
+            ...task,
+            state: "inactive",
+            output: ""
+        }));
+        channel.onmessage = onmessage;
+        invoker(channel);
+    }
+
+    let currentTask = 0;
+    const onmessage = (message) => {
+        if (message.event === 'started') {
+            tasks[currentTask].state = "ongoing";
+            tasks[currentTask].output = ""
+        } else if (message.event === 'output') {
+            if (message.data.file === 'stderr') {
+                tasks[currentTask].output += `<div class="text-red-500">${message.data.output}</div>`;
+            } else {
+                tasks[currentTask].output += `<div>${message.data.output}</div>`;
+            }
+        } else if (message.event === 'nextStage') {
+            tasks[currentTask].state = "done";
+            currentTask++;
+            if (tasks[currentTask]) {
+                tasks[currentTask].state = "ongoing"
+                tasks[currentTask].output = "";
+                if (tasks[currentTask].frontend) {
+                    tasks[currentTask].output = `<i>This task is handled by NestHelper and has no significant output.</i>`
+                    console.log(tasks[currentTask].promise)
+                    Promise.resolve(tasks[currentTask].promise())
+                        .then(() => {
+                            emit("ready_to_move_on")
+                        })
+                        .catch((err) => {
+                            tasks[currentTask].output += `<div class="text-red-500">Error in frontend task: ${err.message}</div>`;
+                            emit("error_on_the_frontend")
+                        })
+                }
+            }
+        } else if (message.event === 'error') {
+            tasks[currentTask].state = "failed";
+        } else if (message.event === 'finished') {
+            tasks[currentTask].state = "done";
+        } else {
+            console.warn("Unknown event:", message);
+        }
+    }
 </script>
 
 <div class="flex flex-col items-start justify-center gap-4 p-2 pr-4 w-full">
     {#each tasks as task, i}
         <div class="relative flex flex-row items-center justify-between gap-4 w-full dark:bg-purple-800 bg-purple-300 p-2 rounded-full">
             <div class="flex flex-row items-center gap-4">
-                <div class="*:absolute w-8 h-8">
+                <div class="*:absolute w-8 h-8 pl-1">
                     {#if task.state === "ongoing"}
                         {@render empty()}
                     {:else if task.state === 'done'}

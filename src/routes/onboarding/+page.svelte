@@ -39,10 +39,11 @@
         { command: null, task: "Connecting via SSH" },
         { command: "nest caddy list", task: "Getting connected domains" },
         { command: "cat Caddyfile", task: "Getting Caddyfile" },
+        { command: null, frontend: true, promise: (() => new Promise((r) => setTimeout(r, 2000))), task: "Finalising setup" },
         { command: "nest resources", task: "Getting nest resources" },
-        { command: null, frontend: true, task: "Finalising setup" }
     ])
     let currentTask = $state(0);
+    let flow = $state();
 
     let handler = async () => {
         if (screen === 2) {
@@ -50,43 +51,22 @@
             if (!username || !disclaimer) {
                 return;
             }
+            auth.value = auth.value || { username };
             auth.value.username = username;
             await save(auth);
             await tick();
 
             const onEvent = new Channel();
-            onEvent.onmessage = (message) => {
-                if (message.event === 'started') {
-                    tasks[currentTask].state = "ongoing";
-                    tasks[currentTask].output = ""
-                } else if (message.event === 'output') {
-                    if (message.data.file === 'stderr') {
-                        tasks[currentTask].output += `<div class="text-red-500">${message.data.output}</div>`;
-                    } else {
-                        tasks[currentTask].output += `<div>${message.data.output}</div>`;
-                    }
-                } else if (message.event === 'nextStage') {
-                    tasks[currentTask].state = "done";
-                    currentTask++;
-                    if (tasks[currentTask]) {
-                        tasks[currentTask].state = "ongoing"
-                        tasks[currentTask].output = "";
-                    }
-                } else if (message.event === 'error') {
-                    tasks[currentTask].state = "failed";
-                } else if (message.event === 'finished') {
-                    tasks[currentTask].state = "done";
-                } else {
-                    console.warn("Unknown event:", message);
-                }
-                console.log(message);
-            };
-            invoke("run_ssh_flow", {
-                username: auth.value.username,
-                commands: tasks.map(t => t.command).filter(c => c),
-                onEvent
-            }).then(r => result = r);
-            onEvent.send();
+            setTimeout(() => {
+                flow.start(onEvent, onEvent => invoke("run_ssh_flow", {
+                    username: auth.value.username,
+                    commands: tasks.map(t => ({
+                        command: t.command,
+                        frontend: t.frontend || false,
+                    })).filter(c => c),
+                    onEvent
+                }));
+            }, 500)
         } else if (screen === 3) {
             showChildren = false;
             setTimeout(() => goto("/main"), 1000);
@@ -145,7 +125,7 @@
                 </div>
             {:else if screen === 2}
                 <div transition:slide class="w-full">
-                    <Flow bind:tasks />
+                    <Flow bind:tasks bind:this={flow} />
                 </div>
             {/if}
             <div class="flex flex-row justify-between w-full items-center">
