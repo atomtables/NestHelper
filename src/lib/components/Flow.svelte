@@ -6,7 +6,7 @@
     import Button from "$lib/components/Button.svelte";
     import {emit} from "@tauri-apps/api/event";
 
-    let { tasks = $bindable() } = $props();
+    let { tasks = $bindable(), complete = $bindable(), failed = $bindable() } = $props();
 
     let popShows = $state({})
     function hideAll(i) {
@@ -15,7 +15,11 @@
         popShows[i] = val;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     export const start = (channel, invoker) => {
+        complete = false
+        failed = false;
+        currentTask = 0;
         tasks = tasks.map((task) => ({
             ...task,
             state: "inactive",
@@ -29,7 +33,7 @@
     const onmessage = (message) => {
         if (message.event === 'started') {
             tasks[currentTask].state = "ongoing";
-            tasks[currentTask].output = ""
+            tasks[currentTask].output = `<i>${tasks[currentTask].command || ''}</i>`;
         } else if (message.event === 'output') {
             if (message.data.file === 'stderr') {
                 tasks[currentTask].output += `<div class="text-red-500">${message.data.output}</div>`;
@@ -41,11 +45,10 @@
             currentTask++;
             if (tasks[currentTask]) {
                 tasks[currentTask].state = "ongoing"
-                tasks[currentTask].output = "";
+                tasks[currentTask].output = `<i>${tasks[currentTask].command || ''}</i>`;
                 if (tasks[currentTask].frontend) {
                     tasks[currentTask].output = `<i>This task is handled by NestHelper and has no significant output.</i>`
-                    console.log(tasks[currentTask].promise)
-                    Promise.resolve(tasks[currentTask].promise())
+                    Promise.resolve(tasks[currentTask].promise(tasks.map(t => t.output)))
                         .then(() => {
                             emit("ready_to_move_on")
                         })
@@ -57,8 +60,11 @@
             }
         } else if (message.event === 'error') {
             tasks[currentTask].state = "failed";
+            failed = true;
         } else if (message.event === 'finished') {
-            tasks[currentTask].state = "done";
+            complete = true;
+            if (tasks[currentTask])
+                tasks[currentTask].state = "done";
         } else {
             console.warn("Unknown event:", message);
         }
@@ -71,13 +77,44 @@
             <div class="flex flex-row items-center gap-4">
                 <div class="*:absolute w-8 h-8 pl-1">
                     {#if task.state === "ongoing"}
-                        {@render empty()}
+                        <div transition:fade={{easing: quintIn}} class="w-8 h-8 rounded-full  flex items-center justify-center transition-colors">
+                            <Spinner type="secondary"/>
+                        </div>
                     {:else if task.state === 'done'}
-                        {@render check()}
+                        <div transition:fade={{easing: quintIn}} class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center peer-checked:bg-purple-700 transition-colors">
+                            <svg
+                                    viewBox="0 0 24 24"
+                                    class="w-5 h-5 text-white scale-100 peer-checked:scale-100"
+                            >
+                                <path in:draw
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="3"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                />
+                            </svg>
+                        </div>
                     {:else if task.state === 'failed'}
-                        {@render failed()}
+                        <div transition:fade class="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center peer-checked:bg-red-700 transition-colors">
+                            <svg
+                                    viewBox="0 0 24 24"
+                                    class="w-5 h-5 text-white scale-100 peer-checked:scale-100"
+                            >
+                                <path in:draw
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="3"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      d="M18 6L6 18M6 6l12 12"
+                                />
+                            </svg>
+                        </div>
                     {:else}
-                        {@render inactive()}
+                        <div transition:fade={{easing: quintIn}} class="w-8 h-8 rounded-full border-3 border-blue-500 dark:border-blue-500 animate-pulse flex items-center justify-center transition-colors">
+                        </div>
                     {/if}
                 </div>
                 <div>{task.task}</div>
@@ -101,51 +138,3 @@
         </div>
     </div>
 {/if}
-
-<!--out:fade={{duration: 200}} in:fade={{delay: 200}}-->
-{#snippet inactive()}
-    <div transition:fade={{easing: quintIn}} class="w-8 h-8 rounded-full border-3 border-blue-500 dark:border-blue-500 animate-pulse flex items-center justify-center transition-colors">
-    </div>
-{/snippet}
-
-{#snippet empty()}
-    <div transition:fade={{easing: quintIn}} class="w-8 h-8 rounded-full  flex items-center justify-center transition-colors">
-        <Spinner type="secondary"/>
-    </div>
-{/snippet}
-
-{#snippet check()}
-    <div transition:fade={{easing: quintIn}} class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center peer-checked:bg-purple-700 transition-colors">
-        <svg
-                viewBox="0 0 24 24"
-                class="w-5 h-5 text-white scale-100 peer-checked:scale-100"
-        >
-            <path in:draw
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M5 13l4 4L19 7"
-            />
-        </svg>
-    </div>
-{/snippet}
-
-{#snippet failed()}
-    <div transition:fade={{easing: quintIn}} class="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center peer-checked:bg-red-700 transition-colors">
-        <svg
-                viewBox="0 0 24 24"
-                class="w-5 h-5 text-white scale-100 peer-checked:scale-100"
-        >
-            <path in:draw
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M18 6L6 18M6 6l12 12"
-            />
-        </svg>
-    </div>
-{/snippet}

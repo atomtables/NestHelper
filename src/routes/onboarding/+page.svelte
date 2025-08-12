@@ -5,7 +5,7 @@
     import image from "$lib/assets/favicon.png"
     import Button from "$lib/components/Button.svelte";
     import Input from "$lib/components/Input.svelte";
-    import {auth, save} from "$lib/state/states.svelte.js";
+    import {auth, save, caddy, server} from "$lib/state/states.svelte.js";
     import Flow from "$lib/components/Flow.svelte";
     import {Channel, invoke} from "@tauri-apps/api/core";
     import {goto} from "$app/navigation";
@@ -35,15 +35,71 @@
     })
 
     let result = $state();
+    let complete = $state(false);
+    let failed = $state(false);
     let tasks = $state([
         { command: null, task: "Connecting via SSH" },
         { command: "nest caddy list", task: "Getting connected domains" },
         { command: "cat Caddyfile", task: "Getting Caddyfile" },
-        { command: null, frontend: true, promise: (() => new Promise((r) => setTimeout(r, 2000))), task: "Finalising setup" },
-        { command: "nest resources", task: "Getting nest resources" },
+        { command: "nest resources", task: "Getting current resource usage" },
+        { command: "uptime && echo --separate-- && uptime -s", task: "Getting server stats"},
+        { command: null, frontend: true, promise: (async (output, self) => {
+            // parse the output of nest caddy list
+            let domains = output[1];
+            let parsed = {};
+            for (let domain of domains.match(/- (.*) \((.*)\)/gm)) {
+                let part = domain.matchAll(/- (.*) \((.*)\)/gm).next()
+                if (part.value?.at(1) && part.value?.at(2)) {
+                    parsed[part.value[1]] = part.value[2];
+                    self(`Parsed domain ${part.value[1]} at socket ${part.value[2]}`)
+                } else {
+                    self(`Failed to parse domain ${domain}. An error occured.`);
+                }
+            }
+
+            let caddyfile = output[2]
+            if (!caddyfile) {
+                self("Caddyfile was empty. Double check please.");
+            }
+
+            caddy.value.caddyfile = caddyfile;
+            caddy.value.domains = parsed;
+            caddy.value.lastUpdated = new Date();
+            await save(caddy);
+            self("Caddyfile and domains saved successfully.");
+
+            // nest resources parsing
+            let resources = output[3];
+            let disk = resources.matchAll(/^Disk usage: (\d*\.\d*).*used out of (\d*\.\d*).*limit$/gm).next()
+            let memory = resources.matchAll(/^Memory usage: (\d*\.\d*).*used out of (\d*\.\d*).*limit$/gm).next()
+            let diskLimit = [disk.value[1], disk.value[2]]
+            let memoryLimit = [memory.value[1], memory.value[2]];
+            if (!(diskLimit[0] && diskLimit[1])) {
+                self("seems there was an issue parsing disk usage.")
+            }
+            if (!(memoryLimit[0] && memoryLimit[1])) {
+                self("seems there was an issue parsing memory usage.")
+            }
+            console.log(output[4]);
+            server.value.diskUsage = diskLimit;
+            server.value.memoryUsage = memoryLimit;
+            await save(server);
+
+        }), task: "Finalising setup" },
     ])
     let currentTask = $state(0);
     let flow = $state();
+    const startFlow = () => {
+        let onEvent = new Channel()
+        flow.start(onEvent, onEvent => invoke("run_ssh_flow", {
+            username: auth.value.username,
+            commands: tasks.map(t => ({
+                command: t.command,
+                frontend: t.frontend || false,
+            })).filter(c => c),
+            onEvent
+        }))
+    };
 
     let handler = async () => {
         if (screen === 2) {
@@ -56,16 +112,8 @@
             await save(auth);
             await tick();
 
-            const onEvent = new Channel();
             setTimeout(() => {
-                flow.start(onEvent, onEvent => invoke("run_ssh_flow", {
-                    username: auth.value.username,
-                    commands: tasks.map(t => ({
-                        command: t.command,
-                        frontend: t.frontend || false,
-                    })).filter(c => c),
-                    onEvent
-                }));
+                startFlow();
             }, 500)
         } else if (screen === 3) {
             showChildren = false;
@@ -76,8 +124,8 @@
 
 <div class="h-full w-full bg-purple-200 dark:bg-purple-900 overflow-y-scroll" in:scaleCircle out:scaleCircle>
     {#if showChildren}
-        <div class="flex flex-col max-w-4xl mx-auto h-full items-start justify-center p-5 gap-4 overflow-y-scroll" transition:scale>
-            <div class="flex flex-row items-center gap-4 justify-center backdrop-blur-md">
+        <div class="flex flex-col max-w-4xl mx-auto h-full items-start justify-center p-5 overflow-y-scroll" transition:scale>
+            <div class="flex flex-row items-center gap-4 justify-center backdrop-blur-md pb-4">
                 <img src={image} class="h-16 w-16" alt="app icon">
                 <div class="text-4xl font-sans">NestHelper</div>
             </div>
@@ -125,19 +173,25 @@
                 </div>
             {:else if screen === 2}
                 <div transition:slide class="w-full">
-                    <Flow bind:tasks bind:this={flow} />
+                    <Flow bind:tasks bind:complete bind:failed bind:this={flow} />
                 </div>
             {/if}
-            <div class="flex flex-row justify-between w-full items-center">
+            <div class="flex flex-row justify-between w-full items-center pt-4">
                 <Button
                     onclick={() => screen--}
                     disabled={screen === 0}
                 >Back</Button>
+                {#if failed}
+                    <Button
+                        onclick={() => {startFlow()}}
+                    >Try again</Button>
+                {/if}
                 <Button
                     onclick={async () => {await tick(); screen++; await handler(); await tick();}}
                     disabled={
-                        screen >= 5 ||
-                        (screen === 1 && (!username || !disclaimer))
+                        screen >= 3 ||
+                        (screen === 1 && (!username || !disclaimer)) ||
+                        (screen === 2 && !complete)
                     }
                 >Continue</Button>
             </div>

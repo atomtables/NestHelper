@@ -21,6 +21,31 @@ export let auth = $state<State<Authentication>>({
     set: false,
     value: null
 });
+
+type CaddySettings = {
+    lastUpdated: Date,
+    domains: [string, string][],
+    caddyfile: string // i aint doing visual caddyfile editing yet
+}
+export let caddy = $state<State<CaddySettings>>({
+    persistent: "caddy",
+    set: false,
+    value: null
+})
+
+type NestServer = {
+    diskUsage: [number, number],
+    memoryUsage: [number, number],
+    users: number,
+    runningSince: Date,
+    lastUpdated: Date
+}
+export let server = $state<State<NestServer>>({
+    persistent: "server",
+    set: false,
+    value: null
+})
+
 export let error = $state<State<string>>({
     set: false,
     value: null

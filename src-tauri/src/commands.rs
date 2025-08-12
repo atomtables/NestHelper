@@ -1,4 +1,5 @@
-use std::sync::{Arc, Mutex};
+use std::process::exit;
+use std::sync::{Arc};
 use std::sync::atomic::{AtomicU32, Ordering};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
@@ -8,38 +9,6 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Event, Listener};
 use tauri::ipc::Channel;
 use tokio::io::AsyncWriteExt;
-
-#[tauri::command]
-pub fn helloworld() -> String {
-    println!("Hello, world!");
-    "Hello, world!".into()
-}
-
-// #[tauri::command]
-// pub async fn verifyssh(username: String) -> Result<bool, String> {
-//     let needed = Command::new("ssh")
-//         .arg(format!("{}@hackclub.app", username))
-//         .args(["-o", "LogLevel=ERROR"])
-//         .args(["-C", "uname -a"])
-//         .output();
-//     println!("{:?}", needed);
-//     if needed.is_err() {
-//         return Err(format!(
-//             "Failed to run command: {}",
-//             needed.err().unwrap().to_string()
-//         ));
-//     };
-//     let output = needed.ok().unwrap();
-//     println!("{:?}", output);
-//     if output.status.code() != Some(0) {
-//         return Err(output
-//             .stderr
-//             .into_iter()
-//             .map(|c| c as char)
-//             .collect::<String>());
-//     }
-//     Ok(true)
-// }
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "event", content = "data")]
@@ -100,19 +69,19 @@ pub(crate) fn format_commands(username: &str, commands: &Vec<String>) -> String 
 pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<FrontendCommandArg>, on_event: Channel<ProcessEvent>) -> Result<(), String> {
     let mut parsed_commands: Vec<String> = vec![];
     let mut max_num_stdin: u32 = 0;
-    let mut written_num_stdin: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
+    let written_num_stdin: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
     for command in commands {
         let command = command.clone();
         if let Some(c) = command.command {
             parsed_commands.push(c);
         } else {
-            if command.frontend { parsed_commands.push("read".to_string()); max_num_stdin += 1; }
+            if command.frontend { parsed_commands.push("read error && if [ \"$error\" = \"fail\" ]; then exit 1; fi".to_string()); max_num_stdin += 1; }
         }
     }
 
     let commands = parsed_commands;
 
-    let mut child = Arc::new(tokio::sync::Mutex::new(Command::new("ssh")
+    let child = Arc::new(tokio::sync::Mutex::new(Command::new("ssh")
         .arg(format!("{}@hackclub.app", username))
         .arg(format_commands(&username, &commands))
         .stdin(std::process::Stdio::piped())
@@ -175,9 +144,10 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
 
     let written_num_stdin_clone = written_num_stdin.clone();
     let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
+    let stdin_3 = stdin.clone();
     let app_handle_stdin_2 = app_handle_stdin.clone();
     let stdin_handler = tokio::spawn(async move {
-        let stdin = stdin.clone();
+        let stdin = stdin_3.clone();
         let app_handle_stdin_3 = app_handle_stdin_2.clone();
         let eventid = app_handle_stdin_2.listen("ready_to_move_on",  move |event: Event| {
             let stdin = stdin.clone();
@@ -204,13 +174,17 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
 
     let app_handle_stdin_5 = app_handle_stdin.clone();
     let frontend_error_child = child.clone();
+    let on_event_frontend_error = on_event.clone();
+    let current_stage_frontend_error = current_stage.clone();
+    let stdin_2 = stdin.clone();
     let kill_if_frontend_error = app.listen("error_on_the_frontend", move |event| {
         let frontend_error_child = frontend_error_child.clone();
         let app_handle_stdin_5 = app_handle_stdin_5.clone();
         let event_id = event.id();
+        let stdin_2 = stdin.clone();
         tauri::async_runtime::spawn(async move {
-            let mut child = frontend_error_child.lock().await;
-            child.start_kill().expect("did not quit ssh after error on the frontend");
+            let mut stdin_2 = stdin_2.lock().await;
+            stdin_2.write_all(b"fail\n").await.expect("Failed to write to stdin");
             app_handle_stdin_5.unlisten(event_id);
         });
     });
