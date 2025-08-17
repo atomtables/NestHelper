@@ -5,10 +5,12 @@
     import image from "$lib/assets/favicon.png"
     import Button from "$lib/components/Button.svelte";
     import Input from "$lib/components/Input.svelte";
-    import {auth, save, caddy, server} from "$lib/state/states.svelte.js";
+    import {auth, save, caddy, server, currentFlow} from "$lib/state/states.svelte.js";
     import Flow from "$lib/components/Flow.svelte";
     import {Channel, invoke} from "@tauri-apps/api/core";
     import {goto} from "$app/navigation";
+    import Workflow from "$lib/conn/Workflow.svelte.ts";
+    import Flows from "$lib/conn/Flows.ts";
 
     let showChildren = $state(false);
     let screen = $state(0);
@@ -34,71 +36,10 @@
         setTimeout(() => showChildren = true, 700)
     })
 
-    let result = $state();
-    let complete = $state(false);
-    let failed = $state(false);
-    let tasks = $state([
-        { command: null, task: "Connecting via SSH" },
-        { command: "nest caddy list", task: "Getting connected domains" },
-        { command: "cat Caddyfile", task: "Getting Caddyfile" },
-        { command: "nest resources", task: "Getting current resource usage" },
-        { command: "uptime && echo --separate-- && uptime -s", task: "Getting server stats"},
-        { command: null, frontend: true, promise: (async (output, self) => {
-            // parse the output of nest caddy list
-            let domains = output[1];
-            let parsed = {};
-            for (let domain of domains.match(/- (.*) \((.*)\)/gm)) {
-                let part = domain.matchAll(/- (.*) \((.*)\)/gm).next()
-                if (part.value?.at(1) && part.value?.at(2)) {
-                    parsed[part.value[1]] = part.value[2];
-                    self(`Parsed domain ${part.value[1]} at socket ${part.value[2]}`)
-                } else {
-                    self(`Failed to parse domain ${domain}. An error occured.`);
-                }
-            }
-
-            let caddyfile = output[2]
-            if (!caddyfile) {
-                self("Caddyfile was empty. Double check please.");
-            }
-
-            caddy.value.caddyfile = caddyfile;
-            caddy.value.domains = parsed;
-            caddy.value.lastUpdated = new Date();
-            await save(caddy);
-            self("Caddyfile and domains saved successfully.");
-
-            // nest resources parsing
-            let resources = output[3];
-            let disk = resources.matchAll(/^Disk usage: (\d*\.\d*).*used out of (\d*\.\d*).*limit$/gm).next()
-            let memory = resources.matchAll(/^Memory usage: (\d*\.\d*).*used out of (\d*\.\d*).*limit$/gm).next()
-            let diskLimit = [disk.value[1], disk.value[2]]
-            let memoryLimit = [memory.value[1], memory.value[2]];
-            if (!(diskLimit[0] && diskLimit[1])) {
-                self("seems there was an issue parsing disk usage.")
-            }
-            if (!(memoryLimit[0] && memoryLimit[1])) {
-                self("seems there was an issue parsing memory usage.")
-            }
-            console.log(output[4]);
-            server.value.diskUsage = diskLimit;
-            server.value.memoryUsage = memoryLimit;
-            await save(server);
-
-        }), task: "Finalising setup" },
-    ])
-    let currentTask = $state(0);
-    let flow = $state();
     const startFlow = () => {
-        let onEvent = new Channel()
-        flow.start(onEvent, onEvent => invoke("run_ssh_flow", {
-            username: auth.value.username,
-            commands: tasks.map(t => ({
-                command: t.command,
-                frontend: t.frontend || false,
-            })).filter(c => c),
-            onEvent
-        }))
+        currentFlow.set = true;
+        currentFlow.value = new Workflow(Flows.startup);
+        currentFlow.value.start();
     };
 
     let handler = async () => {
@@ -173,7 +114,7 @@
                 </div>
             {:else if screen === 2}
                 <div transition:slide class="w-full">
-                    <Flow bind:tasks bind:complete bind:failed bind:this={flow} />
+                    <Flow />
                 </div>
             {/if}
             <div class="flex flex-row justify-between w-full items-center pt-4">
@@ -181,7 +122,7 @@
                     onclick={() => screen--}
                     disabled={screen === 0}
                 >Back</Button>
-                {#if failed}
+                {#if currentFlow.value?.failed}
                     <Button
                         onclick={() => {startFlow()}}
                     >Try again</Button>
@@ -191,7 +132,7 @@
                     disabled={
                         screen >= 3 ||
                         (screen === 1 && (!username || !disclaimer)) ||
-                        (screen === 2 && !complete)
+                        (screen === 2 && !currentFlow.value?.complete)
                     }
                 >Continue</Button>
             </div>

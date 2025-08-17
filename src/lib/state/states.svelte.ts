@@ -1,18 +1,30 @@
 import {load as loadStore} from "@tauri-apps/plugin-store";
 import {tick} from "svelte";
 import * as exports from "./states.svelte.js";
+import Workflow from "$lib/conn/Workflow.svelte.js";
 
 type State<T> = {
     persistent?: string,
     set: boolean,
     value: T | null
 }
+type WithUpdate<T> = {
+    lastUpdated: Date
+} & T
 
-export let appReady = $state<State<Boolean>>({
+type AppReady = {
+    persistentStoresLoaded: boolean,
+    latestNestData: boolean
+}
+export let appReady = $state<State<AppReady>>({
     set: true,
-    value: false
+    value: {
+        persistentStoresLoaded: false,
+        latestNestData: false
+    }
 });
 
+// Persistent
 type Authentication = {
     username: string
 }
@@ -22,26 +34,51 @@ export let auth = $state<State<Authentication>>({
     value: null
 });
 
+// Persistent
 type CaddySettings = {
-    lastUpdated: Date,
     domains: [string, string][],
     caddyfile: string // i aint doing visual caddyfile editing yet
 }
-export let caddy = $state<State<CaddySettings>>({
+export let caddy = $state<State<WithUpdate<CaddySettings>>>({
     persistent: "caddy",
     set: false,
     value: null
 })
 
+// Persistent
+type Service = {
+    name: string,
+    description: string,
+    loaded: "loaded",
+    path: string,
+    enabled: "enabled" | "disabled",
+    preset: "enabled" | "disabled",
+    active: "active" | "inactive" | "failed",
+    status: string, // if failed this is the result
+    since: Date,
+    pid: number,
+    exec: string // if failed this is the exit code
+}
+export let services = $state<State<WithUpdate<Service[]>>>({
+    persistent: "services",
+    set: false,
+    value: null
+})
+
+// Persistent
 type NestServer = {
     diskUsage: [number, number],
     memoryUsage: [number, number],
     users: number,
-    runningSince: Date,
-    lastUpdated: Date
+    runningSince: Date
 }
-export let server = $state<State<NestServer>>({
+export let server = $state<State<WithUpdate<NestServer>>>({
     persistent: "server",
+    set: false,
+    value: null
+})
+
+export let currentFlow = $state<State<typeof Workflow>>({
     set: false,
     value: null
 })
@@ -64,7 +101,6 @@ export async function loadAll() {
         }
     }
 }
-
 export async function load(store: string) {
     const state = Array(exports).find((s: any) => typeof s === 'object' && 'persistent' in state && s.persistent === store);
     if (state && state.persistent) {
@@ -76,7 +112,6 @@ export async function load(store: string) {
     }
     await tick();
 }
-
 export async function save(state: any) {
     await tick();
     if (state && state.persistent) {
@@ -89,4 +124,9 @@ export async function save(state: any) {
         }
         console.log(await storeData.entries())
     }
+}
+export function arrWithUpdate<T>(arr: T[]): WithUpdate<T[]> {
+    let newArr = arr as WithUpdate<T[]>
+    newArr.lastUpdated = new Date();
+    return newArr;
 }

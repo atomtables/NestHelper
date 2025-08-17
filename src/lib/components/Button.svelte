@@ -24,6 +24,6 @@
         {#if resolving && !disableLoading}
             <Spinner size="24" class="mr-2" type={!transparent ? 'secondary' : 'primary'}/>
         {/if}
-        {@render children()}
+        {@render children?.()}
     </span>
 </button>

@@ -1,4 +1,3 @@
-use std::process::exit;
 use std::sync::{Arc};
 use std::sync::atomic::{AtomicU32, Ordering};
 use tokio::{
@@ -174,11 +173,7 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
 
     let app_handle_stdin_5 = app_handle_stdin.clone();
     let frontend_error_child = child.clone();
-    let on_event_frontend_error = on_event.clone();
-    let current_stage_frontend_error = current_stage.clone();
-    let stdin_2 = stdin.clone();
     let kill_if_frontend_error = app.listen("error_on_the_frontend", move |event| {
-        let frontend_error_child = frontend_error_child.clone();
         let app_handle_stdin_5 = app_handle_stdin_5.clone();
         let event_id = event.id();
         let stdin_2 = stdin.clone();

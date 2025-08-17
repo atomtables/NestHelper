@@ -28,4 +28,6 @@ html {
 
 @theme {
     --top-bar: 36px;
+    --bottom-bar: 24px;
+    --both-bars: calc(var(--top-bar) + var(--bottom-bar));
 }

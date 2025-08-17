@@ -11,9 +11,7 @@
     onMount(async () => {
         try {
             await loadAll();
-            appReady.value = true;
-            $state.snapshot(auth)
-            $state.snapshot(appReady)
+            appReady.value.persistentStoresLoaded = true;
 
             if (!auth.value.username) {
                 await tick();
@@ -33,7 +31,7 @@
 
 <div class="backdrop-blur-md fixed -z-5 top-0 w-full h-full bg-splash-screen flex flex-col items-center justify-center" transition:fade>
     <div class="flex flex-row items-center">
-        <img src={image} class="h-20 w-20 mr-4" />
+        <img src={image} class="h-20 w-20 mr-4" alt=""/>
         <div class="text-6xl font-sans">NestHelper</div>
     </div>
     <div class="flex flex-row items-center mt-4">
