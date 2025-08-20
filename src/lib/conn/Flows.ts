@@ -1,10 +1,11 @@
-import {caddy as caddyStore, save, server as serverStore, services as servicesStore} from "$lib/state/states.svelte.js";
+import {caddy as caddyStore, saveAll, server as serverStore, services as servicesStore} from "$lib/state/states.svelte.js";
 import {type Task} from "$lib/conn/Workflow.svelte.js";
-import {arrWithUpdate} from "$lib/state/states.svelte";
+import {attempt} from "$lib/helpers/attempt.js";
 
 const caddy: Task[] = [
     { command: "nest caddy list", task: "Getting connected domains" },
     { command: "cat Caddyfile", task: "Getting Caddyfile" },
+    { command: "caddy adapt", task: "Getting Caddy rules in JSON"}
 ]
 
 const server: Task[] = [
@@ -36,18 +37,31 @@ const startup: Task[] = [
                 self("Caddyfile was empty. Double check please.");
             }
 
+            console.info(output[3])
+            let caddyJSON = attempt(() => JSON.parse(output[3]));
+            let parsedCaddy: any = {};
+            if (caddyJSON) {
+                if (caddyJSON.admin) {
+                    parsedCaddy.admin = true;
+                }
+                if (caddyJSON.apps?.http?.servers) {
+                    parsedCaddy.servers = Object.entries(caddyJSON.apps.http.servers).length;
+                }
+            }
+
+
             caddyStore.set = true;
             // noinspection JSValidateTypes
             caddyStore.value = {
                 caddyfile: String(caddyfile),
                 domains: parsed,
+                json: parsedCaddy,
                 lastUpdated: new Date()
             }
-            await save(caddy);
             self("Caddyfile and domains saved successfully.");
 
             // nest resources parsing
-            let resources = output[3];
+            let resources = output[4];
             let disk = resources.matchAll(/^Disk usage: (\d*\.\d*).*used out of (\d*\.\d*).*limit$/gm).next()
             let memory = resources.matchAll(/^Memory usage: (\d*\.\d*).*used out of (\d*\.\d*).*limit$/gm).next();
             let diskLimit: [number, number] = [parseFloat(disk.value[1]), parseFloat(disk.value[2])]
@@ -59,8 +73,8 @@ const startup: Task[] = [
                 self("seems there was an issue parsing memory usage.")
             }
 
-            let [users, since] = output[4].split("--separate--");
-            let userCount = parseInt(users.matchAll(/, (\d+) users,/gm).next().value[1])
+            let [users, since] = output[5].split("--separate--");
+            let userCount = parseInt(users.matchAll(/,\s*?(\d+) users,/gm).next().value[1])
             let sinceDate = new Date(since.trim());
             serverStore.set = true;
             serverStore.value = {
@@ -70,17 +84,17 @@ const startup: Task[] = [
                 runningSince: sinceDate,
                 lastUpdated: new Date()
             }
-            await save(server);
 
-            let services = output[5]
+            let services = output[6]
             let servicesPreprocess = services.matchAll(/[●×] (.+?\.service) ?-? ?(.+?)?\s.+Loaded: (.*) \((.+?); (.+?); preset: (.+?)\)\s+Active: (.*?) \((.*)\) since (.*?);.*\s.*?Main PID: (\d+) \((.*)\)/gm)
 
             let service: IteratorResult<RegExpExecArray, any>;
             servicesStore.set = true;
-            servicesStore.value = arrWithUpdate([]); // since we're loading the latest information
+            servicesStore.value.services = []
+            servicesStore.value.lastUpdated = new Date();
             while (service = servicesPreprocess.next(), !service.done) {
                 let [_, name, description, loaded, path, enabled, preset, active, status, since, pid, exec] = service.value;
-                servicesStore.value.push({
+                servicesStore.value.services.push({
                     name,
                     description: description || null,
                     loaded: loaded as "loaded",
@@ -94,8 +108,8 @@ const startup: Task[] = [
                     exec
                 });
             }
-            self(`Services loaded successfully.: ${servicesStore.value[0].name}`);
-            await save(servicesStore);
+
+            await saveAll();
         }), task: "Finalising setup" },
 ]
 

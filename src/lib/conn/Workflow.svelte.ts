@@ -44,6 +44,7 @@ export type Task = {
     state?: "inactive" | "ongoing" | "done" | "failed",
     output?: string,
     stdout?: string,
+    stderr?: string,
 }
 
 export default class Workflow {
@@ -53,7 +54,8 @@ export default class Workflow {
     public started: boolean = $state(false);
 
     private promise: Promise<void>;
-    private currentTask: number;
+    private currentTask: number = $state(0);
+    public task: Task = $derived(this.tasks?.[this.currentTask] || null)
 
     constructor(tasks: Task[]) {
         if (!(this instanceof Workflow)) {
@@ -74,7 +76,8 @@ export default class Workflow {
             ...task,
             state: "inactive",
             output: "",
-            stdout: ``
+            stdout: ``,
+            stderr: ``
         }));
     }
 
@@ -92,10 +95,11 @@ export default class Workflow {
             } else if (message.event === 'output') {
                 if (message.data.file === 'stderr') {
                     this.tasks[this.currentTask].output += `<div class="text-red-500">${message.data.output}</div>`;
+                    this.tasks[this.currentTask].stderr += message.data.output + "\n";
                 } else {
                     this.tasks[this.currentTask].output += `<div>${message.data.output}</div>`;
+                    this.tasks[this.currentTask].stdout += message.data.output + "\n";
                 }
-                this.tasks[this.currentTask].stdout += message.data.output + "\n";
             } else if (message.event === 'nextStage') {
                 this.tasks[this.currentTask].state = "done";
                 this.currentTask++;
@@ -120,6 +124,7 @@ export default class Workflow {
                 this.failed = true;
             } else if (message.event === 'finished') {
                 this.complete = true;
+                setTimeout(() => this.started = false, 3000)
                 if (this.tasks[this.currentTask])
                     this.tasks[this.currentTask].state = "done";
             } else {

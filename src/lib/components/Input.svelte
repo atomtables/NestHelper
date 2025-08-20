@@ -39,7 +39,7 @@
     {#if type === "dropdown"}
         <select
                 bind:value={value} {type} name={id} {id}
-                class="w-full px-3 pt-5 pb-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-base focus:outline-none focus:ring-2 focus:ring-green-500 transition-all {className}"
+                class="w-full px-3 pt-5 pb-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-base focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all {className}"
                 onfocus={() => isFocused = true}
                 onblur={() => isFocused = false}
         >

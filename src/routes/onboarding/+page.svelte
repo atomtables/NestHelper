@@ -63,9 +63,9 @@
     }
 </script>
 
-<div class="h-full w-full bg-purple-200 dark:bg-purple-900 overflow-y-scroll" in:scaleCircle out:scaleCircle>
+<div class="h-full w-full bg-purple-200 dark:bg-purple-900 overflow-y-auto" in:scaleCircle out:scaleCircle>
     {#if showChildren}
-        <div class="flex flex-col max-w-4xl mx-auto h-full items-start justify-center p-5 overflow-y-scroll" transition:scale>
+        <div class="flex flex-col max-w-4xl mx-auto h-full items-start justify-center p-5 overflow-y-auto" transition:scale>
             <div class="flex flex-row items-center gap-4 justify-center backdrop-blur-md pb-4">
                 <img src={image} class="h-16 w-16" alt="app icon">
                 <div class="text-4xl font-sans">NestHelper</div>

@@ -1,6 +1,6 @@
 <script lang="ts">
     import Spinner from "$lib/components/Spinner.svelte";
-    import {appReady, auth, error, loadAll} from "$lib/state/states.svelte.ts";
+    import {app, auth, error, loadAll} from "$lib/state/states.svelte.ts";
     import {onMount, tick} from "svelte";
     import { load } from '@tauri-apps/plugin-store';
     import {goto} from "$app/navigation";
@@ -11,7 +11,7 @@
     onMount(async () => {
         try {
             await loadAll();
-            appReady.value.persistentStoresLoaded = true;
+            app.value.persistentStoresLoaded = true;
 
             if (!auth.value.username) {
                 await tick();

@@ -16,7 +16,7 @@
 </script>
 
 <div class="flex flex-col items-start justify-center gap-4 p-2 pr-4 w-full">
-    {#if currentFlow.value?.started}
+    {#if currentFlow.value?.tasks}
         {#each currentFlow.value.tasks as task, i}
             <div class="relative flex flex-row items-center justify-between gap-4 w-full dark:bg-purple-800 bg-purple-300 p-2 rounded-full" transition:slide>
                 <div class="flex flex-row items-center gap-4">

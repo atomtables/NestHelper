@@ -9,6 +9,7 @@ use tauri::{AppHandle, Event, Listener};
 use tauri::ipc::Channel;
 use tokio::io::AsyncWriteExt;
 
+// this is all for running an SSH flow.
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "event", content = "data")]
 pub(crate) enum ProcessEvent {
@@ -34,14 +35,12 @@ pub(crate) enum ProcessEvent {
         return_code: i32
     },
 }
-
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "event")]
 pub(crate) struct FrontendCommandArg {
     command: Option<String>,
     frontend: bool
 }
-
 pub(crate) fn parse_output(username: &str, output: &str, current: u32) -> (bool, u32) {
     if output.starts_with("---STAGE") && output.ends_with(format!("-{}-COMPLETE--", username).as_str()) {
         if let Some(stage_str) = output.split("--STAGE").nth(1) {
@@ -54,7 +53,6 @@ pub(crate) fn parse_output(username: &str, output: &str, current: u32) -> (bool,
     }
     (false, current)
 }
-
 pub(crate) fn format_commands(username: &str, commands: &Vec<String>) -> String {
     let mut formatted_commands = format!("echo ---STAGE1-{}-COMPLETE--", username);
     for (i, command) in commands.iter().enumerate() {
@@ -63,7 +61,6 @@ pub(crate) fn format_commands(username: &str, commands: &Vec<String>) -> String 
     }
     formatted_commands
 }
-
 #[tauri::command]
 pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<FrontendCommandArg>, on_event: Channel<ProcessEvent>) -> Result<(), String> {
     let mut parsed_commands: Vec<String> = vec![];
@@ -172,7 +169,6 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
     }
 
     let app_handle_stdin_5 = app_handle_stdin.clone();
-    let frontend_error_child = child.clone();
     let kill_if_frontend_error = app.listen("error_on_the_frontend", move |event| {
         let app_handle_stdin_5 = app_handle_stdin_5.clone();
         let event_id = event.id();
@@ -205,4 +201,41 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
     app.unlisten(kill_if_frontend_error);
 
     Ok(())
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "event")]
+pub(crate) struct CommandOutput {
+    code: u32,
+    stdout: String,
+    stderr: String,
+}
+#[tauri::command]
+pub async fn run_ssh_command(username: String, command: String) -> Result<CommandOutput, CommandOutput> {
+    let child = Command::new("ssh")
+        .arg(format!("{}@hackclub.app", username))
+        .arg(command)
+        .output()
+        .await
+        .map_err(|e| CommandOutput {code: 255, stdout: "".parse().unwrap(), stderr: e.to_string()})?;
+
+    let stdout = String::from_utf8_lossy(&child.stdout).into_owned();
+    let stderr = String::from_utf8_lossy(&child.stderr).into_owned();
+
+    if !child.status.success() {
+        return Err(CommandOutput {
+            code: child.status.code().unwrap_or(0) as u32,
+            stdout,
+            stderr
+        })
+    }
+
+    println!("{}", stdout);
+    eprintln!("{}", stderr);
+
+    Ok(CommandOutput {
+        code: child.status.code().unwrap_or(0) as u32,
+        stdout,
+        stderr
+    })
 }

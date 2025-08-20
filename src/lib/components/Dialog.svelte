@@ -137,6 +137,7 @@
             open: false,
             title,
             description,
+            loading: true,
             actions: [{
                 name: "Cancel",
                 action: async () => {
@@ -165,6 +166,15 @@
             }, 400)
         })
 
+        promise.catch(() => {
+            props.open = false;
+            setTimeout(async () => {
+                await unmount(dialog);
+                element.remove();
+            }, 400)
+            alert("Error", "An error occured while waiting.");
+        })
+
         promise.finally(() => state(true));
 
         return [await result, close];
@@ -173,15 +183,16 @@
 
 <script>
     import Button from "$lib/components/Button.svelte";
+    import Spinner from "$lib/components/Spinner.svelte";
     import {fade} from "svelte/transition";
     import {quadInOut} from "svelte/easing";
 
-    let {open, title, description, actions, children} = $props();
+    let {open, title, description, actions, children, loading} = $props();
     const closeF = () => open = false;
 </script>
 
 {#if open}
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/50"
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/50 backdrop-blur-sm"
          transition:fade={{ delay: 50, duration: 150, easing: quadInOut }}>
         <div
                 class="bg-neutral-800 shadow-xl w-full min-w-md max-w-2xl mx-4"
@@ -190,7 +201,12 @@
                 transition:fade={{ duration: 150, easing: quadInOut }}
         >
             <div class="px-6 pt-5">
-                <h2 class="text-2xl font-bold">{title}</h2>
+                <h2 class="text-2xl font-bold flex flex-row items-center gap-2">
+                    {#if loading}
+                        <Spinner />
+                    {/if}
+                    <span>{title}</span>
+                </h2>
                 <h5 class="pt-0 font-semibold">{description}</h5>
             </div>
 
