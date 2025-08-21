@@ -32,10 +32,18 @@ L(json.dumps(E))`
 
     let promise = null;
 
+    let mounted = $state(false);
     onMount(() => {
         app.value.status = "Loading files...";
         console.log(filesystem.value)
-        if (new Date() - (filesystem.value?.lastUpdated || new Date(0)) > 1000 * 60 * 5) {
+        try {
+            if (filesystem.value) {
+                // noinspection JSValidateTypes
+                filesystem.value.fileData = filesystem.value.fileData || {};
+                filesystem.value.currentFolder = [folder];
+            }
+        } catch {}
+        if (new Date() - (new Date(filesystem.value?.lastUpdated) || new Date(0)) > 1000 * 60 * 5) {
             promise = Command(`python3 -c '${command}'`)
                 .then(async res => {
                     app.value.status = `Ignoring ${ignore.length} patterns`;
@@ -58,11 +66,12 @@ L(json.dumps(E))`
             promise = Promise.resolve();
             app.value.status = `Ignoring ${ignore.length} patterns`;
         }
+        mounted = true;
     })
 
 </script>
 
-{#if filesystem.value.files}
+{#if filesystem.value.files && mounted}
     <Result />
 {:else}
     {#await promise}

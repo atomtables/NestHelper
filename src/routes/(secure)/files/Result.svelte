@@ -24,20 +24,24 @@
         return folder.children;
     })
     let selectedFile = $state()
-    let currentFile = $state()
     let currentFilePath = $state()
 
-    const read = file => ` python3 -c 'with open("${file}", "rb") as f:print([int(x) for x in f.read()])'`;
+    const read = file => `python3 -c 'with open("${file}", "rb") as f:print([int(x) for x in f.read()])'`;
 
     const loadFile = async () => {
         let filePath = filesystem.value.currentFolder.join('/') + '/' + selectedFile[0];
         app.value.status = `Loading file: ${filePath}`;
         try {
             let output = await Command(read(filePath))
-            let arr = new Uint8Array(JSON.parse(output.stdout))
-            currentFile = new TextDecoder('utf-8', { fatal: true }).decode(arr);
+            filesystem.value.fileData[filePath] = {
+                original: new Uint8Array(JSON.parse(output.stdout)),
+                modified: new Uint8Array(JSON.parse(output.stdout)) // two instances
+            }
             currentFilePath = filePath;
-            app.value.status = `File loaded: ${filePath}`;
+            app.value.status = `File loaded: ${filePath}`;if (!filesystem.value.currentFolder) {
+                // noinspection JSValidateTypes
+                filesystem.value.currentFolder = [folder];
+            }
         } catch (e) {
             console.error("Error loading file:", e);
             await alert(
@@ -53,6 +57,10 @@
         } finally {
             app.value.status = "";
         }
+    }
+    const unloadFile = () => {
+        delete filesystem.value.fileData[currentFilePath];
+        currentFilePath = null;
     }
 
     let folderPath = $derived(filesystem.value.currentFolder)
@@ -82,7 +90,12 @@
                     onclick={value.type === 'folder' ? () => {
                         folderPath.push(key);
                     } : () => {
-                        selectedFile = [key, value]; currentFile = null;
+                        selectedFile = [key, value];
+                        if (filesystem.value.fileData[folderPath.join('/') + '/' + key]) {
+                            currentFilePath = folderPath.join('/') + '/' + key;
+                        } else {
+                            currentFilePath = null;
+                        }
                     }}
             >
                 {#if value.type === 'folder'}
@@ -96,9 +109,11 @@
         {/each}
     </div>
     <div class="flex-3/4 flex flex-col justify-center items-center m-4 overflow-auto scroll-auto">
-        {#if currentFile}
+        {#if currentFilePath}
             <!--suppress JSUnresolvedReference -->
-            <File bind:file={currentFile} filename={selectedFile[0]} folderPath={currentFilePath} />
+            {#key currentFilePath}
+                <File filename={selectedFile[0]} filePath={currentFilePath} nvm={unloadFile} />
+            {/key}
         {:else}
             {#if selectedFile}
                 <img src={file} alt="file" class="w-16 mb-4">

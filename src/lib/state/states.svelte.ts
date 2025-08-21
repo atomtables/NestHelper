@@ -75,12 +75,17 @@ type FileFolder = {
 
 type Filesystem = {
     files: { [name: string]: FileFolder },
-    fileData: { [name: string]: Uint8Array[] }
+    fileData: { [name: string]: {
+            original: Uint8Array<ArrayBuffer>,
+            modified: Uint8Array<ArrayBuffer>
+        }
+    }
+    filesWereModified: boolean,
     currentFolder: string[],
 }
 export let filesystem = $state<State<WithUpdate<Filesystem>>>({
     persistent: "filesystem",
-    persistentIgnore: ["fileData", "currentFolder"],
+    persistentIgnore: ["fileData", "currentFolder", "filesWereModified"],
     set: false,
     value: null
 });
