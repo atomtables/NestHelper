@@ -3,7 +3,8 @@
 	import favicon from '$lib/assets/favicon.png';
 	import flow from '$lib/assets/flow.png';
 	import files from '$lib/assets/files.png';
-	import {app, auth, currentFlow} from '$lib/state/states.svelte.ts';
+	import save from '$lib/assets/save.png';
+	import {app, auth, currentFlow, filesystem} from '$lib/state/states.svelte.ts';
 	import { page } from "$app/state";
 	import image from "$lib/assets/favicon.png";
 	import Spinner from "$lib/components/Spinner.svelte";
@@ -13,28 +14,50 @@
 	import {quintIn} from "svelte/easing";
 	import {onMount} from "svelte";
 	import {goto} from "$app/navigation";
+	import {confirm} from "$lib/components/Dialog.svelte";
+	import {getCurrentWindow} from "@tauri-apps/api/window";
 
 	let { children } = $props();
 	let open = $state(false);
+
+	onMount(() => {
+		getCurrentWindow().onCloseRequested(async (e) => {
+			const confirmed = await confirm('Are you sure you want to close the app?', 'You may have unsaved changes that will be lost if you close the app.');
+			if (!confirmed) {
+				e.preventDefault();
+			} else {
+				await window.destroy()
+			}
+		});
+	})
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="h-(--top-bar) z-50 bg-purple-200 dark:bg-purple-900 flex flex-row justify-between items-center backdrop-blur-sm" data-tauri-drag-region>
+<div class="h-(--top-bar) relative z-50 bg-purple-200 dark:bg-purple-900 flex flex-row justify-between items-center backdrop-blur-sm" data-tauri-drag-region>
 	{#if app.value.persistentStoresLoaded && auth.value.username}
 		{@const path = page.url.pathname}
-		<div class="rounded-2xl flex flex-row items-center h-8 select-none gap-2">
+		<div class="rounded-2xl flex flex-row items-center h-8 select-none gap-2 z-50">
 			<div class="transition-colors hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 rounded-full w-18.5 h-6 px-2 py-1 ml-2"></div>
-			<a href="/main" aria-current="{path === '/main'}" class="transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/main' && 'border-b-2'} p-2">
+			<a href="/main" aria-current="{path === '/main'}" class="z-50 group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/main' && 'border-b-2'} p-2">
 				<img src={image} alt="Relaunch the app" class="h-4 w-4" />
+				<div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
+					Home
+				</div>
 			</a>
-			<a href="/flow" aria-current="{path === '/flow'}" class="transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/flow' && 'border-b-2'} p-2">
+			<a href="/flow" aria-current="{path === '/flow'}" class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/flow' && 'border-b-2'} p-2">
 				<img src={flow} alt="Flow" class="h-4 w-4" />
+				<div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
+					Flow
+				</div>
 			</a>
-			<a href="/files" aria-current="{path === '/files'}" class="transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/files' && 'border-b-2'} p-2">
+			<a href="/files" aria-current="{path === '/files'}" class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/files' && 'border-b-2'} p-2">
 				<img src={files} alt="Flow" class="h-4 w-4" />
+				<div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
+					Files
+				</div>
 			</a>
 		</div>
 		<div class="h-8 flex flex-row items-center justify-center gap-1">
@@ -107,6 +130,16 @@
 							</div>
 						</div>
 					{/if}
+				</div>
+			{/if}
+			{#if filesystem.value.filesWereModified}
+				<div class="border-b-2 border-amber-500" transition:scale>
+					<Button transparent class="[&]:p-1 w-8 h-8 rounded-none group relative">
+						<img src={save} alt="Flow" class="h-6" />
+						<div class="w-max font-normal z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
+							Save changes to unsaved files
+						</div>
+					</Button>
 				</div>
 			{/if}
 			<div class="mr-2 select-none text-sm">{auth.value.username}@hackclub.app</div>
