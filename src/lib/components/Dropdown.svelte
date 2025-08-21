@@ -32,7 +32,7 @@
 
     {#if open}
         <div
-                class="absolute {getDirection()} z-50 py-1 min-w-max overflow-hidden bg-slate-300 dark:bg-slate-700 shadow-md"
+                class="absolute {getDirection()} z-50 py-1 min-w-max overflow-auto max-h-96 bg-slate-300 dark:bg-slate-700 shadow-md"
                 transition:slide={{ duration: 150 }}
         >
             {#each items as item, ind}

@@ -207,7 +207,7 @@
                     {/if}
                     <span>{title}</span>
                 </h2>
-                <h5 class="pt-0 font-semibold">{description}</h5>
+                <h5 class="pt-0 font-semibold max-w-full text-ellipsis overflow-none">{@html description}</h5>
             </div>
 
             <div class="px-6 py-2">

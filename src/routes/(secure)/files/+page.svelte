@@ -1,8 +1,9 @@
 <script>
     import {Command} from "$lib/conn/Command.js";
     import {onMount} from "svelte";
+    import {wait} from "$lib/components/Dialog.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
-    import {app, auth} from "$lib/state/states.svelte.ts";
+    import {app, auth, filesystem, save} from "$lib/state/states.svelte.ts";
     import Result from "./Result.svelte";
 
     let folder = `/home/${auth.value.username}`
@@ -33,23 +34,42 @@ L(json.dumps(E))`
 
     onMount(() => {
         app.value.status = "Loading files...";
-        promise = Command(`python3 -c '${command}'`)
-            .then(res => {
-                app.value.status = `Ignoring ${ignore.length} patterns`;
-                return JSON.parse(res?.stdout)
-            })
-            .catch(error => {
-                console.error("Error executing command:", error);
-                throw error;
-            });
+        console.log(filesystem.value)
+        if (new Date() - (filesystem.value?.lastUpdated || new Date(0)) > 1000 * 60 * 5) {
+            promise = Command(`python3 -c '${command}'`)
+                .then(async res => {
+                    app.value.status = `Ignoring ${ignore.length} patterns`;
+                    filesystem.set = true
+                    // noinspection JSValidateTypes (esp because ts has no problem with this)
+                    filesystem.value = {
+                        files: JSON.parse(res?.stdout),
+                        fileData: {},
+                        lastUpdated: new Date(),
+                        currentFolder: [folder]
+                    }
+                    await save(filesystem)
+                })
+                .catch(error => {
+                    console.error("Error executing command:", error);
+                    throw error;
+                });
+            wait(promise, "Loading files", "This is necessary to display the current filesystem and update the state.")
+        } else {
+            promise = Promise.resolve();
+            app.value.status = `Ignoring ${ignore.length} patterns`;
+        }
     })
 
 </script>
 
-{#await promise}
-    <Spinner />
-{:then result}
-    <Result {result} dir={folder} />
-{:catch error}
-    <div class="text-red-500">Error: {error.message}</div>
-{/await}
+{#if filesystem.value.files}
+    <Result />
+{:else}
+    {#await promise}
+        <div class="flex flex-row items-center justify-center w-full h-full">
+            <Spinner />
+        </div>
+    {:catch error}
+        <div class="text-red-500">Error: {error.message}</div>
+    {/await}
+{/if}

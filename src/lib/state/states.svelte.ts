@@ -6,6 +6,7 @@ import {type Task} from "$lib/conn/Workflow.svelte";
 
 type State<T> = {
     persistent?: string,
+    persistentIgnore?: string[]
     set: boolean,
     value: T | null
 }
@@ -63,6 +64,26 @@ export let userflows = $state<State<Flows[]>>({
     set: false,
     value: null
 })
+
+type FileFolder = {
+    type: "file",
+    size: number
+} | {
+    type: "folder"
+    children: { [name: string]: FileFolder }
+}
+
+type Filesystem = {
+    files: { [name: string]: FileFolder },
+    fileData: { [name: string]: Uint8Array[] }
+    currentFolder: string[],
+}
+export let filesystem = $state<State<WithUpdate<Filesystem>>>({
+    persistent: "filesystem",
+    persistentIgnore: ["fileData", "currentFolder"],
+    set: false,
+    value: null
+});
 
 // Persistent
 type Service = {
@@ -140,8 +161,7 @@ export async function save(state: any) {
     if (state && state.persistent) {
         const storeData = await loadStore(`${state.persistent}.json`);
         for (const [key, value] of Object.entries(state.value || {})) {
-            console.log(key, value)
-            await storeData.set(key, value);
+            if (!state.persistentIgnore?.includes(key)) await storeData.set(key, value);
         }
         console.log(await storeData.entries())
     }
