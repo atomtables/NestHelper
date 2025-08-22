@@ -17,14 +17,16 @@ type WithUpdate<T> = {
 type AppReady = {
     persistentStoresLoaded: boolean,
     latestNestData: boolean,
-    status: string
+    status: string,
+    pageActions: [string, () => (void | Promise<void>)][]
 }
 export let app = $state<State<AppReady>>({
     set: true,
     value: {
         persistentStoresLoaded: false,
         latestNestData: false,
-        status: ""
+        status: "",
+        pageActions: []
     }
 });
 
@@ -77,7 +79,8 @@ type Filesystem = {
     files: { [name: string]: FileFolder },
     fileData: { [name: string]: {
             original: Uint8Array<ArrayBuffer>,
-            modified: Uint8Array<ArrayBuffer>
+            modified: Uint8Array<ArrayBuffer>,
+            newFile?: boolean
         }
     }
     filesWereModified: boolean,

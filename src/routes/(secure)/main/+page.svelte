@@ -1,12 +1,10 @@
 <script>
-    import {onMount, tick} from "svelte";
-    import {invoke} from '@tauri-apps/api/core';
-    import Spinner from "$lib/components/Spinner.svelte";
-    import {goto} from "$app/navigation";
+    import {onMount} from "svelte";
     import Button from "$lib/components/Button.svelte";
     import {app, auth, caddy, currentFlow, server, services, userflows} from "$lib/state/states.svelte.js";
     import Workflow from "$lib/conn/Workflow.svelte.js";
     import Flows from "$lib/conn/Flows.ts";
+    import {slide} from "svelte/transition";
     import {wait} from "$lib/components/Dialog.svelte";
 
     let now = new Date().getTime();
@@ -21,12 +19,12 @@
             wait(currentFlow.value.promise, "Pulling latest data from Nest", "This process may take a while, but is necessary for showing the latest data.");
             currentFlow.value.promise.then(() => app.value.latestNestData = true)
         }
-
+        app.value.status = ""
         return () => clearInterval(x);
     })
 </script>
 
-<div class="w-full h-full flex flex-col lg:p-5 xl:p-10 2xl:max-w-5/6 2xl:mx-auto 2xl:py-32 gap-5">
+<div class="w-full h-full flex flex-col lg:p-5 xl:p-10 2xl:max-w-5/6 2xl:mx-auto 2xl:py-32 gap-5" transition:slide>
     <div class="text-6xl font-sans">
         Welcome, <b>{auth.value?.username || "Unknown"}!</b>
     </div>
@@ -69,7 +67,7 @@
             </div>
         </div>
         <div class="p-5 rounded-2xl backdrop-blur-2xl bg-neutral-500/25 h-full flex flex-col justify-center items-center flex-1">
-            <Button onclick={() => {currentFlow.value = new Workflow(Flows.startup); currentFlow.value.start()}}>start
+            <Button onclick={() => {currentFlow.value = new Workflow(Flows.startup); currentFlow.value.start();}}>start
                 flow (debug)
             </Button>
         </div>

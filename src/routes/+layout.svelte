@@ -16,17 +16,52 @@
 	import {goto} from "$app/navigation";
 	import {confirm} from "$lib/components/Dialog.svelte";
 	import {getCurrentWindow} from "@tauri-apps/api/window";
+	import Input from "$lib/components/Input.svelte";
+	import Workflow from "$lib/conn/Workflow.svelte.js";
+	import Flows from "$lib/conn/Flows.js";
 
 	let { children } = $props();
 	let open = $state(false);
+	let saveBackup = $state(false);
+
+	const saveFiles = async () => {
+		let filesModified = []
+		for (const key in filesystem.value.fileData) {
+			let arr1 = filesystem.value.fileData[key].original;
+			let arr2 = filesystem.value.fileData[key].modified;
+			if (!(arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]))) {
+				filesModified.push(key)
+			}
+		}
+
+		let [result] = await confirm(
+			"Are you sure you would like to save all files?",
+			`You will be saving all files that you have modified. This includes the following files: <br> ${filesModified.map(f => `<b>${f}</b>`).join("<br>")} <br> Would you like to continue?`,
+			saveFilesBackupConfirmation,
+			true
+		)
+		if (!result) return;
+		currentFlow.value = new Workflow(Flows.saveFiles(filesModified, saveBackup))
+		await currentFlow.value.start();
+		await goto("/flow")
+		currentFlow.value.promise.then(() => {
+			filesystem.value.filesWereModified = false;
+			filesystem.value.fileData = {};
+			app.value.status = "Files saved successfully!";
+		}).catch((e) => {
+			app.value.status = `Error saving files: ${e instanceof Error ? e.message : e}`;
+			alert("Error saving files", "There was an error saving your files. Check the flow for any error logs that may have appeared.")
+		});
+	}
 
 	onMount(() => {
 		getCurrentWindow().onCloseRequested(async (e) => {
-			const confirmed = await confirm('Are you sure you want to close the app?', 'You may have unsaved changes that will be lost if you close the app.');
+			const [confirmed] = await confirm('Are you sure you want to close the app?', 'You may have unsaved changes that will be lost if you close the app.');
+			console.log(confirmed);
 			if (!confirmed) {
 				e.preventDefault();
 			} else {
-				await window.destroy()
+				await getCurrentWindow().destroy()
 			}
 		});
 	})
@@ -35,6 +70,15 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
+
+{#snippet saveFilesBackupConfirmation()}
+	<div class="flex flex-row items-center gap-2">
+		<Input type="checkbox" bind:value={saveBackup} class="w-min" />
+		<div class="text-sm">
+			Save a backup of all files beforehand.
+		</div>
+	</div>
+{/snippet}
 
 <div class="h-(--top-bar) relative z-50 bg-purple-200 dark:bg-purple-900 flex flex-row justify-between items-center backdrop-blur-sm" data-tauri-drag-region>
 	{#if app.value.persistentStoresLoaded && auth.value.username}
@@ -134,7 +178,7 @@
 			{/if}
 			{#if filesystem.value.filesWereModified}
 				<div class="border-b-2 border-amber-500" transition:scale>
-					<Button transparent class="[&]:p-1 w-8 h-8 rounded-none group relative">
+					<Button disableLoading transparent class="[&]:p-1 w-8 h-8 rounded-none group relative" onclick={saveFiles}>
 						<img src={save} alt="Flow" class="h-6" />
 						<div class="w-max font-normal z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
 							Save changes to unsaved files
@@ -149,9 +193,18 @@
 <div class="w-screen h-[calc(100vh-var(--both-bars))] overflow-auto relative">
 	{@render children?.()}
 </div>
-<div class="h-(--bottom-bar) z-50 bg-purple-50 dark:bg-purple-950 flex flex-row justify-between items-center backdrop-blur-sm" data-tauri-drag-region>
-	<div class="text-xs ml-2">
-		{app.value.status}
+<div class="h-(--bottom-bar) z-50 bg-purple-50 dark:bg-purple-950 flex flex-row items-center backdrop-blur-sm" data-tauri-drag-region>
+	{#if app.value.status}
+		<div class="text-xs mb-0.5 ml-5">
+			{app.value.status}
+		</div>
+	{/if}
+	<div class="text-xs mb-0.5 ml-5">
+		{#each app.value.pageActions as [name, action]}
+			<button class="inline-block px-2 cursor-pointer underline" onclick={async () => await action()}>
+				{name}
+			</button>
+		{/each}
 	</div>
 </div>
 

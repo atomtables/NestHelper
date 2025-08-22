@@ -52,7 +52,7 @@
     let currentLanguage = $state(highlighting(filename));
 </script>
 
-{#if file}
+{#if file != null}
     <div class="flex flex-col w-full h-full gap-2">
         <div class="flex flex-row items-center justify-between gap-2">
             <div class="text-sm text-neutral-300">{filePath}</div>

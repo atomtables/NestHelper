@@ -1,6 +1,7 @@
 import {caddy as caddyStore, saveAll, server as serverStore, services as servicesStore} from "$lib/state/states.svelte.js";
 import {type Task} from "$lib/conn/Workflow.svelte.js";
 import {attempt} from "$lib/helpers/attempt.js";
+import {filesystem} from "$lib/state/states.svelte";
 
 const caddy: Task[] = [
     { command: "nest caddy list", task: "Getting connected domains" },
@@ -113,6 +114,27 @@ const startup: Task[] = [
         }), task: "Finalising setup" },
 ]
 
+const saveFiles = (files: string[], backup: boolean): Task[] => {
+    let tasks = [{ command: null, task: "Connecting via SSH" }]
+
+    for (let file of files) {
+        const backupCommand = `mv ${file} ${file}.bak`
+        const saveCommand = `python3 -c 'with open("${file}", "wb") as f: f.write(bytes([${Array.from(filesystem.value.fileData[file].modified)}]))'`
+
+        if (backup && !filesystem.value.fileData[file].newFile) tasks.push({
+            command: backupCommand,
+            task: `Backing up original file ${file} to ${file}.bak`
+        })
+        tasks.push({
+            command: saveCommand,
+            task: `Saving file ${file} to server`
+        });
+    }
+
+    return tasks;
+}
+
 export default {
-    startup
+    startup,
+    saveFiles
 }

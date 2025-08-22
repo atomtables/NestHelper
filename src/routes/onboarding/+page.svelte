@@ -93,8 +93,9 @@
                             <li>It is recommended that you access Nest via SSH at least once before using
                                 NestHelper to ensure there are no authentication errors.</li>
                             <li>Make sure that the you enter your current username and your SSH key is stored
-                                in your local SSH folder. Too many failed login attempts
-                                may get you temporarily IP banned from Nest and Nest services.</li>
+                                in your local SSH folder. Failed login attempts may result in an IP ban.</li>
+                            <li>NestHelper may have bugs or glitches that may result in data loss. Ensure that
+                                all important files have been backed up as necessary.</li>
                         </ul>
                     </div>
                     <div class="flex flex-row justify-center items-center gap-2">

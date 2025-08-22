@@ -1,5 +1,7 @@
 import {invoke} from "@tauri-apps/api/core";
 import {auth} from "$lib/state/states.svelte";
+import {emit} from "@tauri-apps/api/event";
+import {type NHPromise} from "$lib/conn/Workflow.svelte";
 
 type CommandResult = {
     stdout: string,
@@ -8,12 +10,16 @@ type CommandResult = {
 }
 
 // One-shot command.
-export async function Command(command: string): Promise<CommandResult> {
+export function Command(command: string): NHPromise<CommandResult> {
     try {
-        return await invoke("run_ssh_command", {
+        let promise: NHPromise<CommandResult> = invoke("run_ssh_command", {
             username: auth.value.username,
             command
         });
+        promise.cancel = () => {
+            emit("abort_ssh_command").then(() => null)
+        }
+        return promise
     } catch (error) {
         throw error;
     }

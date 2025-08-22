@@ -138,6 +138,7 @@ export const highlighting = (filename: string) => {
             return lang.id;
         }
     }
+    return 'plaintext';
 }
 
 export default monaco;

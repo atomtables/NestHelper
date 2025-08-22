@@ -47,13 +47,17 @@ export type Task = {
     stderr?: string,
 }
 
+export interface NHPromise<T> extends Promise<T> {
+    cancel?: () => void
+}
+
 export default class Workflow {
     public tasks: Task[] = $state<Task[]>([]);
     public complete: boolean = $state(false);
     public failed: boolean = $state(false);
     public started: boolean = $state(false);
 
-    private promise: Promise<void>;
+    private promise: NHPromise<void>;
     private currentTask: number = $state(0);
     public task: Task = $derived(this.tasks?.[this.currentTask] || null)
 
@@ -140,5 +144,12 @@ export default class Workflow {
             })).filter(c => c),
             onEvent
         })
+
+        this.promise.cancel = () => {
+            emit("abort_ssh_flow").catch(err => {
+                console.error("Failed to cancel SSH flow:", err);
+            });
+            this.started = false;
+        }
     }
 }

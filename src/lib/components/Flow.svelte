@@ -74,6 +74,9 @@
                 {/if}
             </div>
         {/each}
+        <div class="flex flex-row items-center justify-end">
+            <Button onclick={() => currentFlow.value.promise.cancel()}>Cancel Flow</Button>
+        </div>
     {:else}
         <div class="flex flex-row items-center justify-center gap-4 w-full dark:bg-purple-800 bg-purple-300 p-2 rounded-full" transition:slide>
             <Spinner type="secondary"/>

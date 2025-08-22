@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Event, Listener};
 use tauri::ipc::Channel;
 use tokio::io::AsyncWriteExt;
+use crate::kill_pid::kill_process_by_pid;
 
 // this is all for running an SSH flow.
 #[derive(Clone, Serialize)]
@@ -86,6 +87,10 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
         .spawn()
         .expect("Unable to spawn SSH")
     ));
+    let pid = {
+        let child_lock = child.lock().await;
+        child_lock.id().expect("Unable to get process ID")
+    };
 
     let mut child_lock = child.lock().await;
     on_event.send(ProcessEvent::Started {
@@ -116,12 +121,12 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
                 on_event_stdout.send(ProcessEvent::NextStage {
                     stage: current_stage,
                     file: "stdout".to_string(),
-                    output: line
+                    output: line.to_string()
                 }).unwrap();
             } else {
                 on_event_stdout.send(ProcessEvent::Output {
                     file: "stdout".to_string(),
-                    output: line
+                    output: line.to_string()
                 }).unwrap();
             }
         }
@@ -133,7 +138,7 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
             println!("{:?}", line);
             on_event_stderr.send(ProcessEvent::Output {
                 file: "stderr".to_string(),
-                output: line
+                output: line.to_string()
             }).unwrap();
         }
     });
@@ -180,9 +185,24 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
         });
     });
 
+    let app1234ilostcountbecauseIgiveup = app.clone();
+    let kill_because_i_said_so = app.listen("abort_ssh_flow", move |event| {
+        println!("Attempting to kill process with ID: {}", pid);
+
+        if let Err(e) = kill_process_by_pid(pid) {
+            eprintln!("Failed to kill process {}: {}", pid, e);
+        } else {
+            println!("Successfully killed process {}", pid);
+        }
+
+        app1234ilostcountbecauseIgiveup.unlisten(event.id());
+    });
+
     let mut new_child_lock = child.lock().await;
     let status = new_child_lock.wait().await.unwrap();
     let current_stage = *current_stage.lock().await;
+    app.unlisten(kill_because_i_said_so);
+
     if !status.success() {
         on_event.send(ProcessEvent::Error {
             stage: current_stage,
@@ -202,7 +222,6 @@ pub async fn run_ssh_flow(app: AppHandle, username: String, commands: Vec<Fronte
 
     Ok(())
 }
-
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "event")]
 pub(crate) struct CommandOutput {
@@ -211,16 +230,35 @@ pub(crate) struct CommandOutput {
     stderr: String,
 }
 #[tauri::command]
-pub async fn run_ssh_command(username: String, command: String) -> Result<CommandOutput, CommandOutput> {
+pub async fn run_ssh_command(app: AppHandle, username: String, command: String) -> Result<CommandOutput, CommandOutput> {
     let child = Command::new("ssh")
         .arg(format!("{}@hackclub.app", username))
         .arg(command)
-        .output()
-        .await
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::null())
+        .spawn()
         .map_err(|e| CommandOutput {code: 255, stdout: "".parse().unwrap(), stderr: e.to_string()})?;
 
+    let pid = child.id().expect("Failed to get process ID");
+    let app1 = app.clone();
+    let abort = app.listen("abort_ssh_command", move |event| {
+        println!("Attempting to kill process with ID: {}", pid);
+
+        if let Err(e) = kill_process_by_pid(pid) {
+            eprintln!("Failed to kill process {}: {}", pid, e);
+        } else {
+            println!("Successfully killed process {}", pid);
+        }
+
+        app1.unlisten(event.id());
+    });
+
+    let child = child.wait_with_output().await.expect("Failed to wait for child process");
     let stdout = String::from_utf8_lossy(&child.stdout).into_owned();
     let stderr = String::from_utf8_lossy(&child.stderr).into_owned();
+
+    app.unlisten(abort);
 
     if !child.status.success() {
         return Err(CommandOutput {

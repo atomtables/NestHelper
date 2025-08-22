@@ -1,6 +1,7 @@
 <script module>
     import {createRawSnippet, mount, unmount} from "svelte";
     import Dialog from "./Dialog.svelte"
+    import Input from "$lib/components/Input.svelte";
 
     async function never(promise) {
         let run = true;
@@ -62,7 +63,7 @@
         return value;
     }
 
-    export const confirm = async (title, description, children, manualclose) => {
+    export const confirm = async (title, description, children, isSnippet, manualclose) => {
         let state;
         const result = new Promise(resolve => state = resolve);
         let close;
@@ -91,7 +92,7 @@
                 primary: true,
                 close: true
             }],
-            children: createRawSnippet(() => ({
+            children: isSnippet ? children : createRawSnippet(() => ({
                 render: () => children ?? "<div></div>"
             }))
         })
@@ -124,7 +125,7 @@
         return value;
     }
 
-    export const wait = async (promise, title, description, children) => {
+    export const wait = async (promise, title, description, children, showFail) => {
         let state;
         const result = new Promise(resolve => state = resolve);
         let close;
@@ -133,19 +134,22 @@
         let element = document.createElement("div");
         document.body.appendChild(element);
 
+        console.log("promise", promise)
+        console.log("promise.cancel", promise?.cancel)
         let props = $state({
             open: false,
             title,
             description,
             loading: true,
-            actions: [{
+            actions: [promise?.cancel && {
                 name: "Cancel",
                 action: async () => {
+                    promise.cancel()
                     state(false)
                     if (manual) await never(manual);
                 },
                 close: true
-            }],
+            }].filter(n => n),
             children: createRawSnippet(() => ({
                 render: () => children ?? "<div></div>"
             }))
@@ -179,6 +183,80 @@
 
         return [await result, close];
     }
+
+    export const prompt = async (title, description, children, isSnippet, manualclose) => {
+        let state;
+        const result = new Promise(resolve => state = resolve);
+        let close;
+        const manual = new Promise(resolve => close = resolve);
+
+        let element = document.createElement("div");
+        document.body.appendChild(element);
+
+        let inputProps = $state({
+            name: "File name",
+            value: ""
+        })
+        let props = $state({
+            open: false,
+            title,
+            description,
+            actions: [{
+                name: "Cancel",
+                action: async () => {
+                    state(null)
+                    if (manualclose) await never(manual);
+                },
+                close: true
+            }, {
+                name: "OK",
+                action: async () => {
+                    state(inputProps.value)
+                    if (manualclose) await never(manual);
+                },
+                primary: true,
+                close: true
+            }],
+            children: isSnippet ? children : createRawSnippet(() => ({
+                render: () => "<div class='w-full h-full'></div>",
+                setup: (target) => {
+                    const comp = mount(Input, {
+                        target,
+                        props: inputProps,
+                    })
+                    return () => {
+                        unmount(comp);
+                    }
+                }
+            }))
+        })
+
+        const dialog = mount(Dialog, {
+            target: element,
+            props
+        })
+
+        props.open = true
+
+        let value = [await result];
+        if (manualclose) {
+            manual.then(() => {
+                props.open = false;
+                setTimeout(async () => {
+                    await unmount(dialog);
+                    element.remove();
+                }, 400)
+            })
+            value = [value, close]
+        } else {
+            props.open = false;
+            setTimeout(async () => {
+                await unmount(dialog);
+                element.remove();
+            }, 400)
+        }
+        return value;
+    }
 </script>
 
 <script>
@@ -203,7 +281,7 @@
             <div class="px-6 pt-5">
                 <h2 class="text-2xl font-bold flex flex-row items-center gap-2">
                     {#if loading}
-                        <Spinner />
+                        <Spinner class="p-1" />
                     {/if}
                     <span>{title}</span>
                 </h2>
@@ -214,14 +292,16 @@
                 {@render children?.()}
             </div>
 
-            <div class="px-6 pb-4 pt-4 flex justify-end gap-2">
-                {#each actions as {name, action, primary, close}}
-                    <Button transparent={!primary}
-                            onclick={!close ? action : async () => { await action(); closeF(); }}>
-                        {name}
-                    </Button>
-                {/each}
-            </div>
+            {#if actions}
+                <div class="px-6 pb-4 pt-4 flex justify-end gap-2">
+                    {#each actions as {name, action, primary, close}}
+                        <Button transparent={!primary}
+                                onclick={!close ? action : async () => { await action(); closeF(); }}>
+                            {name}
+                        </Button>
+                    {/each}
+                </div>
+            {/if}
         </div>
     </div>
 {/if}

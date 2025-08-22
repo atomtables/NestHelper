@@ -21,10 +21,9 @@
             console.log(`Navigating to ${filesystem.value.currentFolder[i]}`);
             folder = folder.children[filesystem.value.currentFolder[i]];
         }
-        return folder.children;
+        return sort(folder.children);
     })
-    let selectedFile = $state()
-    let currentFilePath = $state()
+    let {currentFilePath = $bindable(), selectedFile = $bindable()} = $props()
 
     const read = file => `python3 -c 'with open("${file}", "rb") as f:print([int(x) for x in f.read()])'`;
 
@@ -82,7 +81,7 @@
                 {folderPath[folderPath.length - 1]}
             </div>
         </div>
-        {#each sort(currentFolder) as [key, value]}
+        {#each currentFolder as [key, value]}
             <div
                     class="pl-2 max-w-full w-full flex flex-row items-center gap-3
                          hover:bg-purple-800 active:bg-purple-700 transition-all
