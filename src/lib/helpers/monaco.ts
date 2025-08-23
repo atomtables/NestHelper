@@ -141,4 +141,13 @@ export const highlighting = (filename: string) => {
     return 'plaintext';
 }
 
+export const supportedBinary = (filename: string) => {
+    const binaryExtensions = ['.exe', '.dll', '.so', '.dylib', '.bin', '.dat', '.class', '.o', '.a', '.lib', '.img', '.iso', '.zip', '.tar', '.gz', '.7z', '.rar', '.mp3', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
+    return binaryExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+}
+export const supportedImage = (filename: string) => {
+    const imageExtensions = ['.apng', '.png', '.avif', '.gif', '.jpg', '.jpeg', '.jfif', '.pjpeg', '.pjp', '.svg', '.webp', '.bmp', '.ico', '.cur', '.tif', '.tiff'];
+    return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+}
+
 export default monaco;

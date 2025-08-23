@@ -24,6 +24,7 @@
 	let open = $state(false);
 	let saveBackup = $state(false);
 
+	// Filesystem to save
 	const saveFiles = async () => {
 		let filesModified = []
 		for (const key in filesystem.value.fileData) {
@@ -53,6 +54,22 @@
 			alert("Error saving files", "There was an error saving your files. Check the flow for any error logs that may have appeared.")
 		});
 	}
+	// Filesystem to check if files modified.
+	$effect(() => {
+		if (!filesystem.value?.files || !filesystem.value?.fileData) {
+			return;
+		}
+		for (let [key, val] of Object.entries(filesystem.value.fileData)) {
+			if (val.original.length !== val.modified.length || val.original.some((v, i) => v !== val.modified[i])) {
+				filesystem.value.filesWereModified = true;
+				return;
+			} else if (val.newFile || val.deletedFile) {
+				filesystem.value.filesWereModified = true;
+				return;
+			}
+		}
+		filesystem.value.filesWereModified = false;
+	})
 
 	onMount(() => {
 		getCurrentWindow().onCloseRequested(async (e) => {

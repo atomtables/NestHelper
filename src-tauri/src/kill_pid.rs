@@ -16,8 +16,8 @@ pub(crate) fn kill_process_by_pid(pid: u32) -> std::io::Result<()> {
 }
 #[cfg(windows)]
 pub(crate) fn kill_process_by_pid(pid: u32) -> std::io::Result<()> {
-    use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
     use windows::Win32::Foundation::HANDLE;
+    use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
 
     unsafe {
         let handle: HANDLE = OpenProcess(PROCESS_TERMINATE, false, pid);
