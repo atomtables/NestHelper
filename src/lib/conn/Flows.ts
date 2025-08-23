@@ -121,6 +121,13 @@ const saveFiles = (files: string[], backup: boolean): Task[] => {
         const backupCommand = `mv ${file} ${file}.bak`
         const saveCommand = `python3 -c 'with open("${file}", "wb") as f: f.write(bytes([${Array.from(filesystem.value.fileData[file].modified)}]))'`
 
+        if (filesystem.value.fileData[file].deletedFile) {
+            tasks.push({
+                command: `rm ${file}`,
+                task: `Deleting file ${file}`
+            })
+            continue;
+        }
         if (backup && !filesystem.value.fileData[file].newFile) tasks.push({
             command: backupCommand,
             task: `Backing up original file ${file} to ${file}.bak`

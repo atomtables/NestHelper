@@ -6,9 +6,11 @@
     import Button from "$lib/components/Button.svelte";
     import {alert} from "$lib/components/Dialog.svelte";
     import {app, filesystem} from "$lib/state/states.svelte.js";
+    import {confirm} from "$lib/components/Dialog.svelte";
     import {Command} from "$lib/conn/Command.js";
-    import Editor from "$lib/components/Editor.svelte";
-    import File from "#root/Volumes/TheEpcodeFiles/NestHelper/src/routes/(secure)/files/File.svelte";
+    import File from "$lib/components/viewers/File.svelte";
+    import {supportedBinary, supportedImage} from "$lib/helpers/monaco.js";
+    import ImageFile from "$lib/components/viewers/ImageFile.svelte";
 
     const sort = children => Object.entries(children)
         .sort(([a,x], [b,y]) => x.type === 'folder' && y.type === 'folder' ? a.localeCompare(b) :
@@ -24,6 +26,7 @@
         return sort(folder.children);
     })
     let {currentFilePath = $bindable(), selectedFile = $bindable()} = $props()
+    let selectedFileType = $state();
 
     const read = file => `python3 -c 'with open("${file}", "rb") as f:print([int(x) for x in f.read()])'`;
 
@@ -61,8 +64,25 @@
         delete filesystem.value.fileData[currentFilePath];
         currentFilePath = null;
     }
+    const deleteFile = async () => {
+        let [result] = await confirm("Are you sure you would like to delete this file?", `You are about to delete the file <b>${selectedFile[0]}</b>. Would you like to continue?`);
+        if (!result) return;
+
+        let filePath = filesystem.value.currentFolder.join('/') + '/' + selectedFile[0];
+        filesystem.value.fileData[filePath] = {
+            original: new Uint8Array([]),
+            modified: new Uint8Array([]),
+            deletedFile: true
+        }
+    }
 
     let folderPath = $derived(filesystem.value.currentFolder)
+    const fileWasModified = filePath => {
+        if (!filesystem.value.fileData[filePath]) return false;
+        let arr1 = filesystem.value.fileData[filePath].original;
+        let arr2 = filesystem.value.fileData[filePath].modified;
+        return !(arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]));
+    }
 </script>
 
 <div class="w-full h-full flex flex-row flex-nowrap inset-0">
@@ -85,12 +105,16 @@
             <div
                     class="pl-2 max-w-full w-full flex flex-row items-center gap-3
                          hover:bg-purple-800 active:bg-purple-700 transition-all
+                           {fileWasModified(folderPath.join('/') + `/${key}`) && 'text-amber-500'}
+                           {filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.deletedFile && 'text-green-500'}
+                           {filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.deletedFile && 'text-gray-500'}
                            rounded-lg cursor-pointer p-1"
                     onclick={value.type === 'folder' ? () => {
                         folderPath.push(key);
                     } : () => {
                         selectedFile = [key, value];
-                        if (filesystem.value.fileData[folderPath.join('/') + '/' + key]) {
+                        selectedFileType = supportedBinary(key) ? 2 : supportedImage(key) ? 1 : 0;
+                        if (filesystem.value.fileData[folderPath.join('/') + '/' + key] && !filesystem.value.fileData[folderPath.join('/') + '/' + key]?.deletedFile) {
                             currentFilePath = folderPath.join('/') + '/' + key;
                         } else {
                             currentFilePath = null;
@@ -107,21 +131,41 @@
             </div>
         {/each}
     </div>
-    <div class="flex-3/4 flex flex-col justify-center items-center m-4 overflow-auto scroll-auto">
+    <div class="flex-3/4 w-full flex flex-col justify-center items-center m-4 overflow-auto scroll-auto">
         {#if currentFilePath}
             <!--suppress JSUnresolvedReference -->
             {#key currentFilePath}
-                <File filename={selectedFile[0]} filePath={currentFilePath} nvm={unloadFile} />
+                {#if selectedFileType === 0}
+                    <File filename={selectedFile[0]} filePath={currentFilePath} nvm={unloadFile} />
+                {:else if selectedFileType === 1}
+                    <ImageFile filePath={currentFilePath} filename={selectedFile[0]} />
+                {/if}
             {/key}
         {:else}
             {#if selectedFile}
                 <img src={file} alt="file" class="w-16 mb-4">
                 <div class="text-2xl font-bold">{selectedFile[0]}</div>
                 <div>Size: {selectedFile[1].size} bytes</div>
-                <div class="pt-4 flex flex-row gap-2 items-center justify-center">
-                    <Input class="appearance-none w-full" type="dropdown" name="File type" elements={["Text", "Image", "Raw Bytes"]}/>
-                    <Button class="w-full" onclick={loadFile}>Load file</Button>
-                </div>
+                {#if filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]?.deletedFile}
+                    <div class="text-red-500 py-2">This file is marked for deletion. Save changes to delete it.</div>
+                    <div>
+                        <Button destructive class="text-sm" onclick={() => filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`].deletedFile = false}>Undo deletion</Button>
+                    </div>
+                {:else}
+                    <div class="flex flex-row pt-4 gap-2 items-center justify-center w-96">
+                        <Input
+                                class="appearance-none w-full flex-2/4"
+                                type="dropdown"
+                                name="File type"
+                                elements={["Text", "Image", "Raw Bytes (unimplemented)"]}
+                                bind:value={selectedFileType}
+                        />
+                        <Button class="w-full flex-1/2" onclick={loadFile}>Load file</Button>
+                    </div>
+                    <div>
+                        <Button destructive class="text-sm" onclick={deleteFile}>Delete file</Button>
+                    </div>
+                {/if}
             {:else}
                 <div class="text-2xl font-bold">No file selected</div>
                 <div>Select a file to view its information.</div>

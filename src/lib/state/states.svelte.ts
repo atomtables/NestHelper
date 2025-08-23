@@ -80,12 +80,14 @@ type Filesystem = {
     fileData: { [name: string]: {
             original: Uint8Array<ArrayBuffer>,
             modified: Uint8Array<ArrayBuffer>,
-            newFile?: boolean
+            newFile?: boolean,
+            deletedFile?: boolean,
         }
     }
     filesWereModified: boolean,
     currentFolder: string[],
 }
+
 export let filesystem = $state<State<WithUpdate<Filesystem>>>({
     persistent: "filesystem",
     persistentIgnore: ["fileData", "currentFolder", "filesWereModified"],
