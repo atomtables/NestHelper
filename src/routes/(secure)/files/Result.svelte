@@ -132,7 +132,7 @@
         {/each}
     </div>
     <div class="flex-3/4 w-full flex flex-col justify-center items-center m-4 overflow-auto scroll-auto">
-        {#if currentFilePath}
+        {#if currentFilePath && filesystem.value.fileData[currentFilePath]?.type != null}
             <!--suppress JSUnresolvedReference -->
             {#key currentFilePath}
                 {#if selectedFileType === 0}
