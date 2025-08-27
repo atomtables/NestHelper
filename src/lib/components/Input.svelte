@@ -9,7 +9,8 @@
         className: containerClassName = '',
         value = $bindable(),
         action,
-        elements
+        elements,
+        ...prop
     } = $props();
 
     let isFocused = $state(false);
@@ -42,6 +43,7 @@
                 class="w-full px-3 pt-5 pb-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-base focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all {className}"
                 onfocus={() => isFocused = true}
                 onblur={() => isFocused = false}
+                {...prop}
         >
             <option></option>
             {#each elements as element, i}
@@ -56,6 +58,7 @@
                     bind:checked={value}
                     onclick={action}
                     class="peer opacity-0 p-1 absolute z-10 cursor-pointer"
+                    {...prop}
             />
             <button onclick={async () => (value = !value, await action())} class="w-4 h-4 transition-all duration-250
                 border-2 border-gray-300 peer-checked:border-purple-600 peer-checked:bg-purple-600
@@ -84,6 +87,7 @@
                 class="w-full px-3 pt-5 pb-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-base focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all {className}"
                 onfocus={() => isFocused = true}
                 onblur={() => isFocused = false}
+                {...prop}
         />
     {/if}
 </div>

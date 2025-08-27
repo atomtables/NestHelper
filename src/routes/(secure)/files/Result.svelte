@@ -26,24 +26,33 @@
         return sort(folder.children);
     })
     let {currentFilePath = $bindable(), selectedFile = $bindable()} = $props()
-    let selectedFileType = $state();
+    let selectedFileType = $state(0);
 
     const read = file => `python3 -c 'with open("${file}", "rb") as f:print([int(x) for x in f.read()])'`;
 
     const loadFile = async () => {
         let filePath = filesystem.value.currentFolder.join('/') + '/' + selectedFile[0];
         app.value.status = `Loading file: ${filePath}`;
+        if (filesystem.value.fileData[filePath]?.deletedFile) {
+            await alert("File deleted", "You have marked this file for deletion. Undo the deletion to load it.");
+            app.value.status = "";
+            return;
+        }
+        if (filesystem.value.fileData[filePath]?.newFile) {
+            console.log("Loading new file from memory");
+            currentFilePath = filePath;
+            filesystem.value.fileData[filePath].type = selectedFileType;
+            return;
+        }
         try {
             let output = await Command(read(filePath))
             filesystem.value.fileData[filePath] = {
+                type: selectedFileType,
                 original: new Uint8Array(JSON.parse(output.stdout)),
                 modified: new Uint8Array(JSON.parse(output.stdout)) // two instances
             }
             currentFilePath = filePath;
-            app.value.status = `File loaded: ${filePath}`;if (!filesystem.value.currentFolder) {
-                // noinspection JSValidateTypes
-                filesystem.value.currentFolder = [folder];
-            }
+            app.value.status = `File loaded: ${filePath}`;
         } catch (e) {
             console.error("Error loading file:", e);
             await alert(
@@ -61,7 +70,8 @@
         }
     }
     const unloadFile = () => {
-        delete filesystem.value.fileData[currentFilePath];
+        console.error("Had to unload file")
+        filesystem.value.fileData[currentFilePath].type = null;
         currentFilePath = null;
     }
     const deleteFile = async () => {
@@ -106,7 +116,7 @@
                     class="pl-2 max-w-full w-full flex flex-row items-center gap-3
                          hover:bg-purple-800 active:bg-purple-700 transition-all
                            {fileWasModified(folderPath.join('/') + `/${key}`) && 'text-amber-500'}
-                           {filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.deletedFile && 'text-green-500'}
+                           {filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.newFile && 'text-green-500'}
                            {filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.deletedFile && 'text-gray-500'}
                            rounded-lg cursor-pointer p-1"
                     onclick={value.type === 'folder' ? () => {
@@ -135,17 +145,23 @@
         {#if currentFilePath && filesystem.value.fileData[currentFilePath]?.type != null}
             <!--suppress JSUnresolvedReference -->
             {#key currentFilePath}
-                {#if selectedFileType === 0}
+                {#if filesystem.value.fileData[currentFilePath].type === 0}
                     <File filename={selectedFile[0]} filePath={currentFilePath} nvm={unloadFile} />
-                {:else if selectedFileType === 1}
-                    <ImageFile filePath={currentFilePath} filename={selectedFile[0]} />
+                {:else if filesystem.value.fileData[currentFilePath].type === 1}
+                    <ImageFile filePath={currentFilePath} filename={selectedFile[0]} nvm={unloadFile} />
+                {:else}
+                    {filesystem.value.fileData[currentFilePath].type}
                 {/if}
             {/key}
         {:else}
             {#if selectedFile}
                 <img src={file} alt="file" class="w-16 mb-4">
                 <div class="text-2xl font-bold">{selectedFile[0]}</div>
-                <div>Size: {selectedFile[1].size} bytes</div>
+                {#if !filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]?.newFile}
+                    <div>Size: {selectedFile[1].size} bytes</div>
+                {:else}
+                    <div class="text-green-500 py-2">New file. Save changes to add it.</div>
+                {/if}
                 {#if filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]?.deletedFile}
                     <div class="text-red-500 py-2">This file is marked for deletion. Save changes to delete it.</div>
                     <div>
@@ -160,10 +176,25 @@
                                 elements={["Text", "Image", "Raw Bytes (unimplemented)"]}
                                 bind:value={selectedFileType}
                         />
-                        <Button class="w-full flex-1/2" onclick={loadFile}>Load file</Button>
+                        <Button class="w-full flex-1/2" onclick={loadFile}>
+                            Load file
+                        </Button>
                     </div>
                     <div>
-                        <Button destructive class="text-sm" onclick={deleteFile}>Delete file</Button>
+                        {#if !filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]?.newFile}
+                            <Button destructive class="text-sm mt-4" onclick={deleteFile}>Delete file</Button>
+                        {:else}
+                            <Button destructive class="text-sm mt-4" onclick={() => {
+                                let folder = filesystem.value.files;
+                                for (let i = 1; i < filesystem.value.currentFolder.length; i++) {
+                                    console.log(`Navigating to ${filesystem.value.currentFolder[i]}`);
+                                    folder = folder.children[filesystem.value.currentFolder[i]];
+                                }
+                                delete folder.children[selectedFile[0]];
+                                delete filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`];
+                                selectedFile = null;
+                            }}>Remove new file</Button>
+                        {/if}
                     </div>
                 {/if}
             {:else}

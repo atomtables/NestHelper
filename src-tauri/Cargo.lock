@@ -96,6 +96,7 @@ version = "0.1.0"
 dependencies = [
  "libc",
  "log",
+ "once_cell",
  "serde",
  "tauri",
  "tauri-build",

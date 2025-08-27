@@ -8,19 +8,21 @@
     import { event } from '@tauri-apps/api';
     import { confirm } from "$lib/components/Dialog.svelte";
     import saveIcon from "$lib/assets/save.png";
+    import back from "$lib/assets/back.png";
     import {save} from "@tauri-apps/plugin-dialog";
     import {create} from "@tauri-apps/plugin-fs";
 
     let {
         filePath,
-        filename
+        filename,
+        nvm
     } = $props()
 
     let file = $state()
     onMount(() => {
         try {
-            // lazy ass code writing
-            file = `data:image/unknown;base64,${filesystem.value.fileData[filePath].original.toBase64()}`
+            // noinspection JSUnresolvedReference lazy ass code writing and intellij sucks for js types
+            file = `data:image/unknown;base64,${filesystem.value.fileData[filePath].modified.toBase64()}`
         } catch (e) {
             console.error("Error decoding file:", e);
             alert("Error", `There was an error decoding the file: ${e.message}. Ensure you selected the correct file type.`);
@@ -46,8 +48,14 @@
 </script>
 
 {#if file != null}
-    <div class="flex flex-col w-full h-full gap-2">
+    <div class="flex flex-col w-full h-full max-h-full gap-2">
         <div class="flex flex-row items-center justify-between flex-nowrap gap-2">
+            <button onclick={() => nvm()} class="group relative cursor-pointer text-sm text-neutral-300 shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 transition-colors">
+                <img src={back} alt="back" class="h-5">
+                <span class="z-50 absolute -bottom-8 py-1 px-2 left-0 text-nowrap bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
+                    Back
+                </span>
+            </button>
             <div class="text-sm text-neutral-300 grow">{filePath}</div>
             <button onclick={() => saveFile()} class="group relative cursor-pointer text-sm text-neutral-300 shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 transition-colors">
                 <img src={saveIcon} alt="save" class="h-5">

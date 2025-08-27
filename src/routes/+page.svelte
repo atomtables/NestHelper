@@ -13,7 +13,7 @@
             await loadAll();
             app.value.persistentStoresLoaded = true;
 
-            if (!auth.value.username) {
+            if (!auth.value?.username) {
                 await tick();
                 setTimeout(() => {
                     goto("/onboarding");

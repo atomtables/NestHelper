@@ -38,7 +38,7 @@
 
     const startFlow = () => {
         currentFlow.set = true;
-        currentFlow.value = new Workflow(Flows.startup);
+        currentFlow.value = new Workflow(Flows.startup, "Startup Data Pull");
         currentFlow.value.start();
     };
 

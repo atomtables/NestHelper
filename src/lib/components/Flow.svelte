@@ -74,9 +74,6 @@
                 {/if}
             </div>
         {/each}
-        <div class="flex flex-row items-center justify-end">
-            <Button onclick={() => currentFlow.value.promise.cancel()}>Cancel Flow</Button>
-        </div>
     {:else}
         <div class="flex flex-row items-center justify-center gap-4 w-full dark:bg-purple-800 bg-purple-300 p-2 rounded-full" transition:slide>
             <Spinner type="secondary"/>
@@ -88,7 +85,7 @@
 {#if Object.entries(popShows).find(([k, v]) => v) && !window.matchMedia("(min-width: 40rem)").matches}
     <div class="absolute p-8 top-0 right-0 left-0 bottom-0" onclick={() => popShows = {}}>
         <div class="p-5 flex flex-col overflow-scroll scroll-auto h-full w-full z-50 shadow-2xl bg-neutral-200 dark:bg-neutral-900" transition:scale={{duration: 200, easing: quartInOut}} onclick={(e) => e.stopPropagation()}>
-            {@html tasks[Object.entries(popShows).find(([k, v]) => v)[0]].output}
+            {@html currentFlow.value?.tasks[Object.entries(popShows).find(([k, v]) => v)[0]].output}
         </div>
     </div>
 {/if}

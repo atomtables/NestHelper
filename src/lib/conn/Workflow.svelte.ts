@@ -25,13 +25,13 @@ export type ProcessEvent = | {
     event: "error",
     data: {
         stage: number,
-        return_code: number
+        returnCode: number
     }
 } | {
     event: "finished",
     data: {
         complete_output: string,
-        return_code: number
+        returnCode: number
     }
 }
 
@@ -53,15 +53,20 @@ export interface NHPromise<T> extends Promise<T> {
 
 export default class Workflow {
     public tasks: Task[] = $state<Task[]>([]);
-    public complete: boolean = $state(false);
-    public failed: boolean = $state(false);
-    public started: boolean = $state(false);
+    public complete: boolean = $state<boolean>(false);
+    public failed: boolean = $state<boolean>(false);
+    public started: boolean = $state<boolean>(false);
+
+    public createdAt: Date = $state();
+    public startedAt: Date = $state();
+    public finishedAt: Date = $state();
+    public name: string = $state()
 
     private promise: NHPromise<void>;
     private currentTask: number = $state(0);
     public task: Task = $derived(this.tasks?.[this.currentTask] || null)
 
-    constructor(tasks: Task[]) {
+    constructor(tasks: Task[], name: string) {
         if (!(this instanceof Workflow)) {
             throw new Error("Workflow must be instantiated with 'new'");
         }
@@ -71,6 +76,8 @@ export default class Workflow {
         this.complete = false;
         this.failed = false;
         this.promise = null;
+        this.createdAt = new Date();
+        this.name = name;
 
         this.currentTask = 0;
     }
@@ -86,10 +93,13 @@ export default class Workflow {
     }
 
     start() {
+        globalThis.flow = this;
         this.started = true;
         this.currentTask = 0;
         this.complete = false;
         this.failed = false;
+        this.startedAt = new Date();
+        this.finishedAt = null;
 
         let onEvent = new Channel<ProcessEvent>();
         onEvent.onmessage = async (message) => {
@@ -107,7 +117,9 @@ export default class Workflow {
             } else if (message.event === 'nextStage') {
                 this.tasks[this.currentTask].state = "done";
                 this.currentTask++;
+                console.log("Next stage:", message.data, this.currentTask);
                 if (this.tasks[this.currentTask]) {
+                    console.log("Starting next task:", this.tasks[this.currentTask]);
                     this.tasks[this.currentTask].state = "ongoing"
                     this.tasks[this.currentTask].output = `<i>${this.tasks[this.currentTask].command || ''}</i>`;
 
@@ -126,11 +138,14 @@ export default class Workflow {
             } else if (message.event === 'error') {
                 this.tasks[this.currentTask].state = "failed";
                 this.failed = true;
+                this.started = true;
+                this.finishedAt = new Date();
             } else if (message.event === 'finished') {
                 this.complete = true;
                 setTimeout(() => this.started = false, 3000)
                 if (this.tasks[this.currentTask])
                     this.tasks[this.currentTask].state = "done";
+                this.finishedAt = new Date();
             } else {
                 console.warn("Unknown event:", message);
             }

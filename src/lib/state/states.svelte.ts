@@ -3,6 +3,7 @@ import {tick} from "svelte";
 import * as exports from "./states.svelte.js";
 import Workflow from "$lib/conn/Workflow.svelte.js";
 import {type Task} from "$lib/conn/Workflow.svelte";
+import {Channel} from "@tauri-apps/api/core";
 
 type State<T> = {
     persistent?: string,
@@ -78,10 +79,12 @@ type FileFolder = {
 type Filesystem = {
     files: { [name: string]: FileFolder },
     fileData: { [name: string]: {
+            type: 0 | 1 | 2
             original: Uint8Array<ArrayBuffer>,
             modified: Uint8Array<ArrayBuffer>,
             newFile?: boolean,
             deletedFile?: boolean,
+            fileAs?: string
         }
     }
     filesWereModified: boolean,
@@ -118,6 +121,22 @@ export let services = $state<State<WithUpdate<Services>>>({
     value: null
 })
 
+type CommandHistory = {
+    id: string,
+    command: string,
+    timestamp: Date,
+    returnCode: number,
+    stdout: string,
+    stderr: string,
+    output: string,
+    outputArr: {file: "stdout" | "stderr", output: string}[]
+}
+export let commandHistory = $state<State<CommandHistory[]>>({
+    persistent: "commandHistory",
+    set: true,
+    value: []
+});
+
 // Persistent
 type NestServer = {
     diskUsage: [number, number],
@@ -147,8 +166,18 @@ export async function load(store: any) {
         if (store.persistent) {
             const storeData = await loadStore(`${store.persistent}.json`);
             if (storeData) {
-                store.value = Object.fromEntries(await storeData.entries());
-                store.set = true;
+                // store.value = Object.fromEntries(await storeData.entries());
+                // store.set = true;
+                const entries = await storeData.entries();
+                const obj: any = {};
+                for (const [key, value] of entries) {
+                    if (value["type"] === 'date' && typeof value["value"] === 'string') {
+                        obj[key] = new Date(value["value"]);
+                        continue;
+                    }
+                    obj[key] = value;
+                }
+                store.value = obj;
             }
         }
     }
@@ -157,11 +186,7 @@ export async function loadAll() {
     for (const state of Object.values(exports) as any) {
         if (state && typeof state === 'object' && 'set' in state && 'value' in state) {
             if (state.persistent) {
-                const store = await loadStore(`${state.persistent}.json`);
-                if (store) {
-                    state.value = Object.fromEntries(await store.entries())
-                    state.set = true;
-                }
+                await load(state);
             }
         }
     }
@@ -171,8 +196,16 @@ export async function save(state: any) {
     if (state && state.persistent) {
         const storeData = await loadStore(`${state.persistent}.json`);
         for (const [key, value] of Object.entries(state.value || {})) {
-            if (!state.persistentIgnore?.includes(key)) await storeData.set(key, value);
+            if (!state.persistentIgnore?.includes(key)) {
+                console.log("value: ", value, Object.prototype.toString.call(value));
+                if (Object.prototype.toString.call(value) === '[object Date]') {
+                    await storeData.set(key, {type: "date", value: (value as Date).toISOString()});
+                    continue;
+                }
+                await storeData.set(key, value)
+            }
         }
+        state.set = true;
         console.log(await storeData.entries())
     }
 }

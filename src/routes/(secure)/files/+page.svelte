@@ -6,8 +6,10 @@
     import {app, auth, filesystem, save} from "$lib/state/states.svelte.ts";
     import {slide} from "svelte/transition";
     import {alert, confirm, prompt} from "$lib/components/Dialog.svelte";
+    import {open as openDialog} from "@tauri-apps/plugin-dialog";
     import Result from "./Result.svelte";
     import {emit} from "@tauri-apps/api/event";
+    import {readFile} from "@tauri-apps/plugin-fs";
 
     let folder = `/home/${auth.value.username}`
     let ignore = ["node_modules","venv",".git",".local",".cache","__pycache__"]
@@ -47,6 +49,8 @@ L(json.dumps(E))`
             let newfiles = JSON.parse(res?.stdout);
             let filesWithNoExistence = [];
             for (const filePath in filesystem.value.fileData) {
+                if (filesystem.value.fileData[filePath]?.newFile) continue; // skip new files
+                if (filesystem.value.fileData[filePath]?.deletedFile) continue; // skip deleted files
                 // If the file no longer exists, remove it from fileData
                 let path = filePath.replace(folder + "/", '').split('/')
                 let curr = newfiles;
@@ -101,10 +105,9 @@ L(json.dumps(E))`
         console.log(promise);
         wait(promise, "Loading files", "This is necessary to display the current filesystem and update the state.", null, false)
     }
-
     const newfile = async () => {
         let folderPath = filesystem.value.currentFolder.join('/');
-        let filename = await prompt("Enter the name of the new file (including extension):", "newfile.txt");
+        let [filename] = await prompt("Enter the name of the new file (including extension):", "newfile.txt");
         if (!filename) return;
         if (filename.includes("/")) {
             await alert("Invalid filename", "The filename cannot contain slashes.");
@@ -138,6 +141,41 @@ L(json.dumps(E))`
         currentFilePath = `${folderPath}/${filename}`;
         selectedFile = filename;
     }
+    const uploadfile = async () => {
+        const file = await openDialog({
+            multiple: false,
+            directory: false,
+        });
+        if (!file) return;
+        const read = await readFile(file);
+        let filename = file.split('/').pop();
+        let folderPath = filesystem.value.currentFolder.join('/') + '/' + filename;
+        if (filesystem.value.fileData[folderPath]) {
+            let [result] = await confirm("File already exists", `The file <b>${filename}</b> already exists in the current folder. Would you like to overwrite it?`);
+            if (!result) return;
+        }
+        let cur = filesystem.value.files;
+        for (const part of filesystem.value.currentFolder) {
+            if (part === filesystem.value.currentFolder[0]) continue;
+            if (!cur.children[part]) {
+                await alert("Error", `The folder <b>${part}</b> does not exist in the filesystem. Please refresh the filesystem.`);
+                return;
+            } else if (cur.children[part].type !== 'folder') {
+                await alert("Error", `The path <b>${part}</b> is not a folder in the filesystem. Please refresh the filesystem.`);
+                return;
+            }
+            cur = cur.children[part];
+        }
+        cur.children[filename] = {
+            type: 'file',
+            size: read.byteLength
+        };
+        filesystem.value.fileData[folderPath] = {
+            original: new Uint8Array(),
+            modified: new Uint8Array(read),
+            newFile: true
+        };
+    }
 
     let mounted = $state(false);
     onMount(() => {
@@ -152,7 +190,7 @@ L(json.dumps(E))`
         } catch {}
         if (new Date() - (new Date(filesystem.value?.lastUpdated) || new Date(0)) > 1000 * 60 * 5) {
             promise = Command(`python3 -c '${command}'`)
-                .then(async res => {
+            promise.then(async res => {
                     app.value.status = `Ignoring ${ignore.length} patterns`;
                     filesystem.set = true
                     // noinspection JSValidateTypes (esp because ts has no problem with this)
@@ -180,7 +218,8 @@ L(json.dumps(E))`
 
         app.value.pageActions = [
             ["refresh", refresh],
-            ["new file", newfile]
+            ["new file", newfile],
+            ["upload file", uploadfile]
         ]
 
         return () => {

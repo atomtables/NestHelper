@@ -14,9 +14,9 @@
         }, 1000);
 
         if (!app.value.latestNestData) {
-            currentFlow.value = new Workflow(Flows.startup);
+            currentFlow.value = new Workflow(Flows.startup, "Startup Data Pull");
             currentFlow.value.start()
-            wait(currentFlow.value.promise, "Pulling latest data from Nest", "This process may take a while, but is necessary for showing the latest data.");
+            // wait(currentFlow.value.promise, "Pulling latest data from Nest", "This process may take a while, but is necessary for showing the latest data.");
             currentFlow.value.promise.then(() => app.value.latestNestData = true)
         }
         app.value.status = ""
@@ -67,7 +67,7 @@
             </div>
         </div>
         <div class="p-5 rounded-2xl backdrop-blur-2xl bg-neutral-500/25 h-full flex flex-col justify-center items-center flex-1">
-            <Button onclick={() => {currentFlow.value = new Workflow(Flows.startup); currentFlow.value.start();}}>start
+            <Button onclick={() => {currentFlow.value = new Workflow(Flows.startup, "Startup Data Pull"); currentFlow.value.start();}}>start
                 flow (debug)
             </Button>
         </div>

@@ -7,6 +7,7 @@
     import {filesystem} from "$lib/state/states.svelte.ts";
     import { save } from '@tauri-apps/plugin-dialog';
     import saveIcon from '$lib/assets/save.png';
+    import back from '$lib/assets/back.png';
     import { event } from '@tauri-apps/api';
     import { confirm } from "$lib/components/Dialog.svelte";
     import Button from "$lib/components/Button.svelte";
@@ -51,12 +52,21 @@
         }
     }
 
-    let currentLanguage = $state(highlighting(filename));
+    onMount(() => {
+        if (!filesystem.value.fileData[filePath].fileAs)
+            filesystem.value.fileData[filePath].fileAs = highlighting(filename)
+    })
 </script>
 
 {#if file != null}
     <div class="flex flex-col w-full h-full gap-2">
         <div class="flex flex-row items-center justify-between flex-nowrap gap-2">
+            <button onclick={() => nvm()} class="group relative cursor-pointer text-sm text-neutral-300 shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 transition-colors">
+                <img src={back} alt="back" class="h-5">
+                <span class="z-50 absolute -bottom-8 py-1 px-2 left-0 text-nowrap bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
+                    Back
+                </span>
+            </button>
             <div class="text-sm text-neutral-300 grow">{filePath}</div>
             <button onclick={() => saveFile()} class="group relative cursor-pointer text-sm text-neutral-300 shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 transition-colors">
                 <img src={saveIcon} alt="save" class="h-5">
@@ -64,8 +74,8 @@
                     Save file
                 </span>
             </button>
-            <Dropdown direction="right" class="[&]:p-0 [background-color:unset]! hover:underline text-sm font-light shrink-0" items={supportedLanguages()}>{currentLanguage}</Dropdown>
+            <Dropdown onselect={i => filesystem.value.fileData[filePath].fileAs = supportedLanguages()[i]} direction="right" class="[&]:p-0 [background-color:unset]! hover:underline text-sm font-light shrink-0" items={supportedLanguages()}>{filesystem.value.fileData[filePath].fileAs}</Dropdown>
         </div>
-        <Editor bind:value={file} language={currentLanguage}/>
+        <Editor bind:value={file} bind:language={filesystem.value.fileData[filePath].fileAs}/>
     </div>
 {/if}

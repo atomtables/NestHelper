@@ -37,6 +37,9 @@
 			}
 		}
 
+		globalThis.filesModified = filesModified;
+		globalThis.filesystem = filesystem
+
 		let [result] = await confirm(
 			"Are you sure you would like to save all files?",
 			`You will be saving all files that you have modified. This includes the following files: <br> ${filesModified.map(f => `<b>${f}</b>`).join("<br>")} <br> Would you like to continue?`,
@@ -44,12 +47,13 @@
 			true
 		)
 		if (!result) return;
-		currentFlow.value = new Workflow(Flows.saveFiles(filesModified, saveBackup))
+		currentFlow.value = new Workflow(Flows.saveFiles(filesModified, saveBackup), "Save modified files to server")
 		await currentFlow.value.start();
 		await goto("/flow")
 		currentFlow.value.promise.then(() => {
 			filesystem.value.filesWereModified = false;
 			filesystem.value.fileData = {};
+			filesystem.value.lastUpdated = new Date(0);
 			app.value.status = "Files saved successfully!";
 		}).catch((e) => {
 			app.value.status = `Error saving files: ${e instanceof Error ? e.message : e}`;
@@ -112,14 +116,20 @@
 			</a>
 			<a href="/flow" aria-current="{path === '/flow'}" class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/flow' && 'border-b-2'} p-2">
 				<img src={flow} alt="Flow" class="h-4 w-4" />
-				<div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
-					Flow
+				<div class="z-50 text-nowrap absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
+					Current Flow
 				</div>
 			</a>
 			<a href="/files" aria-current="{path === '/files'}" class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/files' && 'border-b-2'} p-2">
 				<img src={files} alt="Flow" class="h-4 w-4" />
 				<div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
 					Files
+				</div>
+			</a>
+			<a href="/command" aria-current="{path === '/command'}" class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/command' && 'border-b-2'} p-2">
+				<img src={files} alt="Flow" class="h-4 w-4" />
+				<div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
+					Commands
 				</div>
 			</a>
 		</div>
@@ -149,9 +159,9 @@
 									</svg>
 								</div>
 							</div>
-						{:else if currentFlow.value.error}
+						{:else if currentFlow.value.failed}
 							<div class="absolute top-0 left-0 right-0 bottom-0 w-8 h-8 flex items-center justify-center">
-								<div transition:fade class="rounded-full bg-red-500 flex items-center justify-center peer-checked:bg-red-700 transition-colors">
+								<div transition:fade class="rounded-full w-6 h-6 bg-red-500 flex items-center justify-center peer-checked:bg-red-700 transition-colors">
 								<svg
 										viewBox="0 0 24 24"
 										class="w-4 h-4 text-white scale-100 peer-checked:scale-100"
@@ -176,17 +186,17 @@
 
 					{#if open}
 						<div
-								class="absolute z-50 py-1 right-0 min-w-max overflow-hidden bg-slate-300 dark:bg-slate-700 shadow-2xl"
+								class="absolute z-50 p-5 rounded-2xl top-[calc(100%+0.25rem)] right-0 min-w-max overflow-hidden bg-slate-300 dark:bg-slate-700 shadow-2xl shadow-black"
 								transition:slide={{ duration: 150 }}
 						>
 							<div class="text-sm">
-								Running an SSH flow
+								Running Flow: <b>{currentFlow.value.name}</b>
 							</div>
 							<div class="text-2xl">
 								{#if currentFlow.value.complete}
 									Completed
-								{:else if currentFlow.value.error}
-									Failed
+								{:else if currentFlow.value.failed}
+									Failed while: <b>{currentFlow.value?.task?.task || "Unknown Task"}</b>
 								{:else}
 									{currentFlow.value?.task?.task || "In Progress..."}
 								{/if}
@@ -209,7 +219,7 @@
 		</div>
 	{/if}
 </div>
-<div class="w-screen h-[calc(100vh-var(--both-bars))] overflow-auto relative">
+<div class="w-screen h-[calc(100vh-var(--both-bars))] overflow-auto overscroll-none relative">
 	{@render children?.()}
 </div>
 <div class="h-(--bottom-bar) z-50 bg-purple-50 dark:bg-purple-950 flex flex-row items-center backdrop-blur-sm" data-tauri-drag-region>

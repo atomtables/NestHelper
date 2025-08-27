@@ -2,35 +2,48 @@
 <script lang="ts">
     import type * as Monaco from 'monaco-editor/esm/vs/editor/editor.api';
     import { onDestroy, onMount } from 'svelte';
+    import monaco from '$lib/helpers/monaco';
 
     let editor: Monaco.editor.IStandaloneCodeEditor;
-    let monaco: typeof Monaco;
     let editorContainer: HTMLElement;
 
-    let { value = $bindable(), language = 'html', theme = 'vs-dark', class: className } = $props();
+    let { value = $bindable(), language = $bindable(), theme = 'vs-dark', class: className } = $props();
 
     onMount(async () => {
-        monaco = (await import('$lib/helpers/monaco')).default
-        console.log(monaco.languages.getLanguages())
+        try {
+            // Your monaco instance is ready, let's display some code!
+            editor = monaco.editor.create(editorContainer, {
+                value,
+                language,
+                theme,
+                automaticLayout: true,
+                overviewRulerLanes: 0,
+                overviewRulerBorder: true,
+            });
+            console.log('Editor mounted');
 
-        // Your monaco instance is ready, let's display some code!
-        editor = monaco.editor.create(editorContainer, {
-            value,
-            language,
-            theme,
-            automaticLayout: true,
-            overviewRulerLanes: 0,
-            overviewRulerBorder: true,
-        });
-
-        editor.onDidChangeModelContent((e) => {
-            if (e.isFlush) {
-                /* editor.setValue(value); */
-            } else {
+            editor.onDidChangeModelContent((e) => {
                 value = editor?.getValue() ?? ' ';
-            }
-        });
+            });
+            editor.onDidChangeModelLanguage((e) => {
+                console.log("changed model language", e.newLanguage)
+            })
+        } catch (e) {
+            console.error('Error mounting editor:', e);
+        }
     });
+
+    $effect(() => {
+        try {
+            console.log(monaco?.editor)
+            if (monaco?.editor) {
+                console.log(language)
+                monaco.editor.setModelLanguage(editor.getModel(), language);
+            }
+        } catch (e) {
+            console.error("Major ERROR: ", e)
+        }
+    })
 
     $effect(() => {
         if (value) {
@@ -51,8 +64,12 @@
     });
 
     onDestroy(() => {
-        monaco?.editor.getModels().forEach((model) => model.dispose());
-        editor?.dispose();
+        try {
+            monaco?.editor.getModels().forEach((model) => model.dispose());
+            editor?.dispose();
+        } catch {
+            console.log("failed to destroy")
+        }
     });
 </script>
 

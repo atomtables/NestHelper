@@ -9,7 +9,9 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::run_ssh_flow,
-            commands::run_ssh_command
+            commands::run_ssh_command,
+            commands::ssh_edit_file,
+            commands::run_ssh_command_with_stream
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

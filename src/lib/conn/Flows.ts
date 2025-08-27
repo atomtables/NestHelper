@@ -2,6 +2,7 @@ import {caddy as caddyStore, saveAll, server as serverStore, services as service
 import {type Task} from "$lib/conn/Workflow.svelte.js";
 import {attempt} from "$lib/helpers/attempt.js";
 import {filesystem} from "$lib/state/states.svelte";
+import {EditFile} from "$lib/conn/FIle";
 
 const caddy: Task[] = [
     { command: "nest caddy list", task: "Getting connected domains" },
@@ -18,7 +19,7 @@ const startup: Task[] = [
     { command: null, task: "Connecting via SSH" },
     ...caddy,
     ...server,
-    { command: "for file in ~/.config/systemd/user/*; do if [ -f \"$file\" ]; then systemctl --user status \"${file#/home/atomtables/.config/systemd/user/}\" | grep -e Loaded -e Active -e ● -e × -e \"Main PID\"; fi; done", task: "Getting systemctl services" },
+    { command: "for file in ~/.config/systemd/user/*; do if [ -f \"$file\" ]; then systemctl --user status \"${file#/home/atomtables/.config/systemd/user/}\" | grep -e Loaded -e Active -e ● -e × -e ○ -e \"Main PID\"; fi; done", task: "Getting systemctl services" },
     { command: null, frontend: true, promise: (async (output, self) => {
             // parse the output of nest caddy list
             let domains = output[1];
@@ -91,8 +92,10 @@ const startup: Task[] = [
 
             let service: IteratorResult<RegExpExecArray, any>;
             servicesStore.set = true;
-            servicesStore.value.services = []
-            servicesStore.value.lastUpdated = new Date();
+            servicesStore.value = {
+                services: [],
+                lastUpdated: new Date()
+            };
             while (service = servicesPreprocess.next(), !service.done) {
                 let [_, name, description, loaded, path, enabled, preset, active, status, since, pid, exec] = service.value;
                 servicesStore.value.services.push({
@@ -115,11 +118,10 @@ const startup: Task[] = [
 ]
 
 const saveFiles = (files: string[], backup: boolean): Task[] => {
-    let tasks = [{ command: null, task: "Connecting via SSH" }]
+    let tasks: Task[] = [{ command: null, task: "Connecting via SSH" }]
 
     for (let file of files) {
         const backupCommand = `mv ${file} ${file}.bak`
-        const saveCommand = `python3 -c 'with open("${file}", "wb") as f: f.write(bytes([${Array.from(filesystem.value.fileData[file].modified)}]))'`
 
         if (filesystem.value.fileData[file].deletedFile) {
             tasks.push({
@@ -132,11 +134,22 @@ const saveFiles = (files: string[], backup: boolean): Task[] => {
             command: backupCommand,
             task: `Backing up original file ${file} to ${file}.bak`
         })
-        tasks.push({
-            command: saveCommand,
-            task: `Saving file ${file} to server`
-        });
     }
+
+    for (let file of files) {
+        if (filesystem.value.fileData[file].deletedFile) continue;
+        tasks.push({
+            command: null,
+            task: `Saving file ${file} to server`,
+            frontend: true,
+            promise: async (_, self) => {
+                await EditFile(file, filesystem.value.fileData[file].modified);
+                await saveAll();
+            }
+        })
+    }
+
+    console.log(tasks)
 
     return tasks;
 }

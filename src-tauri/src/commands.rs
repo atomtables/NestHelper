@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Event, Listener};
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{ChildStderr, ChildStdout, Command},
@@ -62,10 +62,10 @@ pub(crate) fn parse_output(username: &str, output: &str, current: u32) -> (bool,
     (false, current)
 }
 pub(crate) fn format_commands(username: &str, commands: &Vec<String>) -> String {
-    let mut formatted_commands = format!("echo ---STAGE1-{}-COMPLETE--", username);
+    let mut formatted_commands = format!("echo && echo ---STAGE1-{}-COMPLETE--", username);
     for (i, command) in commands.iter().enumerate() {
         formatted_commands += &format!(" && {}", command);
-        formatted_commands += &format!(" && echo ---STAGE{}-{}-COMPLETE--", i + 2, username);
+        formatted_commands += &format!(" && echo && echo ---STAGE{}-{}-COMPLETE--", i + 2, username);
     }
     formatted_commands
 }
@@ -149,6 +149,7 @@ pub async fn run_ssh_flow(
             println!("{:?}", line);
             let mut current_stage = *current_stage_stdout.lock().await;
             let parsed = parse_output(&username, &line, current_stage);
+            println!("Parsed: {:?}, Current Stage: {}", parsed, current_stage);
             if parsed.0 {
                 current_stage = parsed.1;
                 on_event_stdout
@@ -345,3 +346,156 @@ pub async fn run_ssh_command(
         stderr,
     })
 }
+
+#[tauri::command]
+pub async fn run_ssh_command_with_stream(
+    app: AppHandle,
+    username: String,
+    command: String,
+    on_event: Channel<ProcessEvent>,
+) -> Result<(), String> {
+    let mut child = Command::new("ssh")
+        .arg(format!("{}@hackclub.app", username)).arg(command.clone())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::piped())
+        .spawn().map_err(|e| e.to_string())?;
+
+    let pid = child.id().expect("Failed to get process ID");
+    let app1 = app.clone();
+    let abort = app.listen("abort_ssh_command", move |event| {
+        if let Err(e) = kill_process_by_pid(pid) {
+            eprintln!("Failed to kill process {}: {}", pid, e);
+        } else {
+            println!("Successfully killed process {}", pid);
+        }
+        app1.unlisten(event.id());
+    });
+    on_event
+        .send(ProcessEvent::Started {
+            command: command.clone(),
+            process_id: pid,
+        })
+        .unwrap();
+
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or("Failed to capture standard output")?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or("Failed to capture standard error")?;
+
+    let on_event_stdout = on_event.clone();
+    let stdout_handler = tokio::spawn(async move {
+        let stdout = BufReader::new(stdout);
+        let mut lines = stdout.lines();
+        while let Some(line) = lines
+            .next_line()
+            .await
+            .expect("Unable to read line from stdout")
+        {
+            on_event_stdout
+                .send(ProcessEvent::Output {
+                    file: "stdout".to_string(),
+                    output: line.to_string(),
+                })
+                .unwrap();
+        }
+    });
+
+    let on_event_stderr = on_event.clone();
+    let stderr_handler = tokio::spawn(async move {
+        let stderr = BufReader::new(stderr);
+        let mut lines = stderr.lines();
+        while let Some(line) = lines
+            .next_line()
+            .await
+            .expect("Unable to read line from stderr")
+        {
+            on_event_stderr
+                .send(ProcessEvent::Output {
+                    file: "stderr".to_string(),
+                    output: line.to_string(),
+                })
+                .unwrap();
+        }
+    });
+    let status = child.wait().await.map_err(|e| e.to_string())?;
+    app.unlisten(abort);
+    if !status.success() {
+        on_event
+            .send(ProcessEvent::Error {
+                stage: 0,
+                return_code: status.code().unwrap_or(-1),
+            })
+            .unwrap();
+        return Err(format!(
+            "Process exited with code: {}.",
+            status.code().unwrap_or(-1)
+        ));
+    }
+    on_event
+        .send(ProcessEvent::Finished {
+            complete_output: "".to_string(),
+            return_code: status.code().unwrap(),
+        })
+        .unwrap();
+
+    stdout_handler.await.expect("stdout handler failed");
+    stderr_handler.await.expect("stderr handler failed");
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn ssh_edit_file(
+    app: AppHandle,
+    username: String,
+    remote_path: String,
+    new_content: Box<[u8]>
+) -> Result<(), String> {
+    let mut ssh = Command::new("ssh")
+        .arg(format!("{}@hackclub.app", username))
+        .arg(format!("dd of={}", remote_path))
+        .stdin(std::process::Stdio::piped())
+        .spawn().expect("Unable to spawn SSH");
+    let mut stdin = ssh.stdin.take().expect("Failed to open stdin");
+    stdin.write_all(&new_content).await.expect("Failed to write to stdin");
+    drop(stdin); // Close stdin to signal EOF
+    let output = ssh.wait_with_output().await.expect("Failed to wait on SSH");
+    if !output.status.success() {
+        return Err(format!(
+            "SSH command failed with status: {}. Stderr: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    Ok(())
+}
+
+// only supports OS with DD, so no windows
+// #[tauri::command]
+// pub async fn ssh_upload_file(
+//     app: AppHandle,
+//     username: String,
+//     local_path: String,
+//     remote_path: String
+// ) -> Result<(), String> {
+//     let mut dd = std::process::Command::new("dd")
+//         .arg(format!("if={}", local_path))
+//         .stdout(std::process::Stdio::piped())
+//         .spawn().map_err(|err| err.to_string())?;
+//     let _ = dd.wait();
+//     let mut ssh_output = std::process::Command::new("ssh")
+//         .arg("atomtables@hackclub.app")
+//         .arg(format!("dd of={}", remote_path))
+//         .stdin(std::process::Stdio::from(dd.stdout.take().expect("failed to take")))  // pipe dd's stdout into ssh's stdin
+//         .spawn().map_err(|err| err.to_string())?;
+//     let status = ssh_output.wait().expect("failed to wait on ssh");
+//     if !status.success() {
+//         return Err(format!("SSH command failed with status: {}", status));
+//     }
+//     Ok(())
+// }
