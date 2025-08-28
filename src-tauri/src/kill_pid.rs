@@ -21,7 +21,7 @@ pub(crate) fn kill_process_by_pid(pid: u32) -> std::io::Result<()> {
     use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
 
     unsafe {
-        let handle: HANDLE = OpenProcess(PROCESS_TERMINATE, false, pid);
+        let handle: HANDLE = OpenProcess(PROCESS_TERMINATE, false, pid)?;
         if handle.is_invalid() {
             return Err(std::io::Error::last_os_error());
         }
