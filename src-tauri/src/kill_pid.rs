@@ -14,9 +14,10 @@ pub(crate) fn kill_process_by_pid(pid: u32) -> std::io::Result<()> {
         }
     }
 }
+// if this doesn't work i quit rust
 #[cfg(windows)]
 pub(crate) fn kill_process_by_pid(pid: u32) -> std::io::Result<()> {
-    use windows::Win32::Foundation::HANDLE;
+    use windows::Win32::Foundation::{HANDLE, CloseHandle};
     use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
 
     unsafe {
@@ -25,10 +26,13 @@ pub(crate) fn kill_process_by_pid(pid: u32) -> std::io::Result<()> {
             return Err(std::io::Error::last_os_error());
         }
 
-        if TerminateProcess(handle, 1).as_bool() {
+        let result = if TerminateProcess(handle, 1) != 0 {
             Ok(())
         } else {
             Err(std::io::Error::last_os_error())
-        }
+        };
+
+        CloseHandle(handle);
+        result
     }
 }
