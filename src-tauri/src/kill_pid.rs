@@ -26,7 +26,7 @@ pub(crate) fn kill_process_by_pid(pid: u32) -> std::io::Result<()> {
             return Err(std::io::Error::last_os_error());
         }
 
-        let result = if TerminateProcess(handle, 1) != 0 {
+        let result = if TerminateProcess(handle, 1).is_ok() {
             Ok(())
         } else {
             Err(std::io::Error::last_os_error())
