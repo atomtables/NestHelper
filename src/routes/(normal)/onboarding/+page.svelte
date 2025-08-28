@@ -5,7 +5,7 @@
     import image from "$lib/assets/favicon.png"
     import Button from "$lib/components/Button.svelte";
     import Input from "$lib/components/Input.svelte";
-    import {auth, save, caddy, server, currentFlow} from "$lib/state/states.svelte.js";
+    import {auth, save, caddy, server, currentFlow} from "$lib/state/states.svelte.ts";
     import Flow from "$lib/components/Flow.svelte";
     import {Channel, invoke} from "@tauri-apps/api/core";
     import {goto} from "$app/navigation";

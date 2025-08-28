@@ -14,6 +14,7 @@
     "core:window:allow-start-dragging",
     "core:window:allow-toggle-maximize",
     "core:window:allow-internal-toggle-maximize",
+    "core:webview:allow-create-webview-window",
     "store:default",
     "fs:default",
     "fs:write-files",

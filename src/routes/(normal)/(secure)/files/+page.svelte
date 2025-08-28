@@ -1,5 +1,5 @@
 <script>
-    import {Command} from "$lib/conn/Command.js";
+    import {Command} from "$lib/conn/Command.ts";
     import {onMount} from "svelte";
     import {wait} from "$lib/components/Dialog.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
@@ -102,7 +102,6 @@ L(json.dumps(E))`
                 console.error("Error executing command:", error);
                 throw error;
             });
-        console.log(promise);
         wait(promise, "Loading files", "This is necessary to display the current filesystem and update the state.", null, false)
     }
     const newfile = async () => {
@@ -180,7 +179,6 @@ L(json.dumps(E))`
     let mounted = $state(false);
     onMount(() => {
         app.value.status = "Loading files...";
-        console.log(filesystem.value)
         try {
             if (filesystem.value) {
                 // noinspection JSValidateTypes

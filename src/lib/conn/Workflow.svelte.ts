@@ -1,6 +1,7 @@
 import {Channel, invoke} from "@tauri-apps/api/core";
 import {auth} from "$lib/state/states.svelte.js";
 import {emit} from "@tauri-apps/api/event";
+import {LocalFetch} from "$lib/helpers/LocalFetch.js";
 
 export type ProcessEvent = | {
     event: "started",
@@ -36,10 +37,20 @@ export type ProcessEvent = | {
 }
 
 export type Task = {
-    command: string,
     task: string,
+    description?: string,
+
+    command: string,
+    cwd?: string,
     frontend?: boolean,
-    promise?: ( outputs: string[], console: (str: string) => void ) => Promise<void>
+    promise?: (
+        outputs: {stdout: string, stderr: string}[],
+        log: (str: string) => void,
+        logError: (str: string) => void,
+        fetchNoCors: typeof LocalFetch,
+    ) => Promise<void>,
+    promiseCode?: string,
+    delay?: string, // seconds to wait after this task is done before moving on
 
     state?: "inactive" | "ongoing" | "done" | "failed",
     output?: string,
@@ -81,15 +92,15 @@ export default class Workflow {
 
         this.currentTask = 0;
     }
-
     setTasks(tasks: Task[]) {
         this.tasks = tasks.map((task): Task => ({
             ...task,
             state: "inactive",
-            output: "",
+            output: `<i>${task.command || ''}</i>`,
             stdout: ``,
             stderr: ``
         }));
+        this.tasks.unshift({ command: null, task: "Connecting via SSH", state: "inactive", output: "", stdout: ``, stderr: `` });
     }
 
     start() {
@@ -117,15 +128,22 @@ export default class Workflow {
             } else if (message.event === 'nextStage') {
                 this.tasks[this.currentTask].state = "done";
                 this.currentTask++;
-                console.log("Next stage:", message.data, this.currentTask);
                 if (this.tasks[this.currentTask]) {
-                    console.log("Starting next task:", this.tasks[this.currentTask]);
                     this.tasks[this.currentTask].state = "ongoing"
-                    this.tasks[this.currentTask].output = `<i>${this.tasks[this.currentTask].command || ''}</i>`;
 
                     if (this.tasks[this.currentTask].frontend) {
                         this.tasks[this.currentTask].output = `<i>This task is handled by NestHelper and has no significant output.</i>`
-                        await Promise.resolve(this.tasks[this.currentTask].promise(this.tasks.map(t => t.stdout), str => this.tasks[this.currentTask].output += `<div>${str}</div>`))
+                        await Promise.resolve(
+                            this.tasks[this.currentTask].promise(
+                                this.tasks.map(t => ({
+                                    stdout: t.stdout,
+                                    stderr: t.stderr
+                                })),
+                                str => this.tasks[this.currentTask].output += `<div>${str}</div>`,
+                                str => this.tasks[this.currentTask].output += `<div class="text-red-500">${str}</div>`,
+                                LocalFetch
+                            )
+                        )
                             .then(() => {
                                 emit("ready_to_move_on")
                             })
@@ -156,6 +174,8 @@ export default class Workflow {
             commands: this.tasks.map(t => ({
                 command: t.command,
                 frontend: t.frontend || false,
+                cwd: t.cwd,
+                delay: t.delay,
             })).filter(c => c),
             onEvent
         })

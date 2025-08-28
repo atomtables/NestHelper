@@ -29,6 +29,9 @@ importers:
       '@tauri-apps/plugin-store':
         specifier: ^2.3.0
         version: 2.4.0
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
     devDependencies:
       '@monaco-editor/loader':
         specifier: ^1.5.0
@@ -1006,6 +1009,10 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
+  uuid@11.1.0:
+    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
+    hasBin: true
+
   vite-imagetools@7.1.1:
     resolution: {integrity: sha512-6Dz0ZD2u1u59dw0ryid4beaDcCNNiTfLXUg6XLxx9n7Qm4BgAAm8TozYUnIH0aT4FDAADZqHsh9ZtISzAs4eKA==}
     engines: {node: '>=18.0.0'}
@@ -1841,6 +1848,8 @@ snapshots:
     optional: true
 
   undici-types@6.21.0: {}
+
+  uuid@11.1.0: {}
 
   vite-imagetools@7.1.1(rollup@4.46.4):
     dependencies:

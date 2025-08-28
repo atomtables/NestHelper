@@ -1,4 +1,4 @@
-<script module>
+<script module lang="ts">
     import {createRawSnippet, mount, unmount} from "svelte";
     import Dialog from "./Dialog.svelte"
     import Input from "$lib/components/Input.svelte";
@@ -134,8 +134,6 @@
         let element = document.createElement("div");
         document.body.appendChild(element);
 
-        console.log("promise", promise)
-        console.log("promise.cancel", promise?.cancel)
         let props = $state({
             open: false,
             title,

@@ -2,7 +2,7 @@
 import Flow from "$lib/components/Flow.svelte";
 import {slide} from "svelte/transition";
 import {onMount} from "svelte";
-import {app, currentFlow} from "$lib/state/states.svelte";
+import {app, currentFlow} from "$lib/state/states.svelte.js";
 import Button from "$lib/components/Button.svelte";
 
 onMount(() => {

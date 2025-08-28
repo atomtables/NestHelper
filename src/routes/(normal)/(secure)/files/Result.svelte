@@ -5,11 +5,11 @@
     import Input from "$lib/components/Input.svelte";
     import Button from "$lib/components/Button.svelte";
     import {alert} from "$lib/components/Dialog.svelte";
-    import {app, filesystem} from "$lib/state/states.svelte.js";
+    import {app, filesystem} from "$lib/state/states.svelte.ts";
     import {confirm} from "$lib/components/Dialog.svelte";
-    import {Command} from "$lib/conn/Command.js";
+    import {Command} from "$lib/conn/Command.ts";
     import File from "$lib/components/viewers/File.svelte";
-    import {supportedBinary, supportedImage} from "$lib/helpers/monaco.js";
+    import {supportedBinary, supportedImage} from "$lib/helpers/monaco.ts";
     import ImageFile from "$lib/components/viewers/ImageFile.svelte";
 
     const sort = children => Object.entries(children)
@@ -20,7 +20,6 @@
     let currentFolder = $derived.by(() => {
         let folder = filesystem.value.files;
         for (let i = 1; i < filesystem.value.currentFolder.length; i++) {
-            console.log(`Navigating to ${filesystem.value.currentFolder[i]}`);
             folder = folder.children[filesystem.value.currentFolder[i]];
         }
         return sort(folder.children);
@@ -39,7 +38,6 @@
             return;
         }
         if (filesystem.value.fileData[filePath]?.newFile) {
-            console.log("Loading new file from memory");
             currentFilePath = filePath;
             filesystem.value.fileData[filePath].type = selectedFileType;
             return;
@@ -187,7 +185,6 @@
                             <Button destructive class="text-sm mt-4" onclick={() => {
                                 let folder = filesystem.value.files;
                                 for (let i = 1; i < filesystem.value.currentFolder.length; i++) {
-                                    console.log(`Navigating to ${filesystem.value.currentFolder[i]}`);
                                     folder = folder.children[filesystem.value.currentFolder[i]];
                                 }
                                 delete folder.children[selectedFile[0]];

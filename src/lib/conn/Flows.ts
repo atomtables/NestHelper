@@ -16,11 +16,11 @@ const server: Task[] = [
 ]
 
 const startup: Task[] = [
-    { command: null, task: "Connecting via SSH" },
     ...caddy,
     ...server,
     { command: "for file in ~/.config/systemd/user/*; do if [ -f \"$file\" ]; then systemctl --user status \"${file#/home/atomtables/.config/systemd/user/}\" | grep -e Loaded -e Active -e ● -e × -e ○ -e \"Main PID\"; fi; done", task: "Getting systemctl services" },
-    { command: null, frontend: true, promise: (async (output, self) => {
+    { command: null, frontend: true, promise: (async (outpu, self) => {
+            let output = outpu.map(o => o.stdout)
             // parse the output of nest caddy list
             let domains = output[1];
             let parsed: [string, string][] = [];
@@ -39,7 +39,6 @@ const startup: Task[] = [
                 self("Caddyfile was empty. Double check please.");
             }
 
-            console.info(output[3])
             let caddyJSON = attempt(() => JSON.parse(output[3]));
             let parsedCaddy: any = {};
             if (caddyJSON) {
@@ -118,7 +117,7 @@ const startup: Task[] = [
 ]
 
 const saveFiles = (files: string[], backup: boolean): Task[] => {
-    let tasks: Task[] = [{ command: null, task: "Connecting via SSH" }]
+    let tasks: Task[] = []
 
     for (let file of files) {
         const backupCommand = `mv ${file} ${file}.bak`
@@ -148,8 +147,6 @@ const saveFiles = (files: string[], backup: boolean): Task[] => {
             }
         })
     }
-
-    console.log(tasks)
 
     return tasks;
 }

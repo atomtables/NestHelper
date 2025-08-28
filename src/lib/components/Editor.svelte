@@ -20,14 +20,10 @@
                 overviewRulerLanes: 0,
                 overviewRulerBorder: true,
             });
-            console.log('Editor mounted');
 
             editor.onDidChangeModelContent((e) => {
                 value = editor?.getValue() ?? ' ';
             });
-            editor.onDidChangeModelLanguage((e) => {
-                console.log("changed model language", e.newLanguage)
-            })
         } catch (e) {
             console.error('Error mounting editor:', e);
         }
@@ -35,9 +31,7 @@
 
     $effect(() => {
         try {
-            console.log(monaco?.editor)
             if (monaco?.editor) {
-                console.log(language)
                 monaco.editor.setModelLanguage(editor.getModel(), language);
             }
         } catch (e) {
@@ -68,7 +62,7 @@
             monaco?.editor.getModels().forEach((model) => model.dispose());
             editor?.dispose();
         } catch {
-            console.log("failed to destroy")
+            console.error("failed to destroy")
         }
     });
 </script>

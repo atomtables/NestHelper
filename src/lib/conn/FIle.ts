@@ -15,15 +15,15 @@ export const EditFile = async (path: string, data: Uint8Array) => {
     }
 }
 
-export const UploadFile = async (local: string, remote: string) => {
-    try {
-        await invoke("ssh_upload_file", {
-            username: auth.value.username,
-            localPath: local,
-            remotePath: remote
-        });
-    } catch (e) {
-        console.error(e);
-        throw e;
-    }
-}
+// export const UploadFile = async (local: string, remote: string) => {
+//     try {
+//         await invoke("ssh_upload_file", {
+//             username: auth.value.username,
+//             localPath: local,
+//             remotePath: remote
+//         });
+//     } catch (e) {
+//         console.error(e);
+//         throw e;
+//     }
+// }

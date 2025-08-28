@@ -1,8 +1,8 @@
 <script>
     import {onMount} from "svelte";
     import Button from "$lib/components/Button.svelte";
-    import {app, auth, caddy, currentFlow, server, services, userflows} from "$lib/state/states.svelte.js";
-    import Workflow from "$lib/conn/Workflow.svelte.js";
+    import {app, auth, caddy, currentFlow, server, services, userflows} from "$lib/state/states.svelte.ts";
+    import Workflow from "$lib/conn/Workflow.svelte.ts";
     import Flows from "$lib/conn/Flows.ts";
     import {slide} from "svelte/transition";
     import {wait} from "$lib/components/Dialog.svelte";
@@ -66,11 +66,11 @@
                 {/if}
             </div>
         </div>
-        <div class="p-5 rounded-2xl backdrop-blur-2xl bg-neutral-500/25 h-full flex flex-col justify-center items-center flex-1">
-            <Button onclick={() => {currentFlow.value = new Workflow(Flows.startup, "Startup Data Pull"); currentFlow.value.start();}}>start
-                flow (debug)
-            </Button>
-        </div>
+<!--        <div class="p-5 rounded-2xl backdrop-blur-2xl bg-neutral-500/25 h-full flex flex-col justify-center items-center flex-1">-->
+<!--            <Button onclick={() => {currentFlow.value = new Workflow(Flows.startup, "Startup Data Pull"); currentFlow.value.start();}}>start-->
+<!--                flow (debug)-->
+<!--            </Button>-->
+<!--        </div>-->
     </div>
     <div class="flex flex-row flex-1 gap-5">
         <div class="p-5 rounded-2xl backdrop-blur-2xl bg-neutral-500/25 h-full flex flex-col justify-center items-start flex-1/2">

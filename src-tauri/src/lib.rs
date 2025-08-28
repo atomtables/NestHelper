@@ -1,5 +1,6 @@
 mod commands;
 mod kill_pid;
+mod fetch;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -11,7 +12,8 @@ pub fn run() {
             commands::run_ssh_flow,
             commands::run_ssh_command,
             commands::ssh_edit_file,
-            commands::run_ssh_command_with_stream
+            commands::run_ssh_command_with_stream,
+            fetch::tauri_fetch
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

@@ -5,6 +5,8 @@ import Workflow from "$lib/conn/Workflow.svelte.js";
 import {type Task} from "$lib/conn/Workflow.svelte";
 import {Channel} from "@tauri-apps/api/core";
 
+export const AsyncFunction = async function () {}.constructor;
+
 type State<T> = {
     persistent?: string,
     persistentIgnore?: string[]
@@ -56,16 +58,19 @@ export let caddy = $state<State<WithUpdate<CaddySettings>>>({
     value: null
 })
 
-type Flows = {
-    tasks: Task[],
+type Flow = {
+    tasks: Task[], // i am NOT adding control flow yet.
     name: string,
-    description: string,
-    lastUpdated: Date
+    lastUpdated: Date,
+    draft?: boolean
 }
-export let userflows = $state<State<Flows[]>>({
+type FlowWrapper = {
+    flows: Flow[]
+}
+export let userflows = $state<State<FlowWrapper>>({
     persistent: "userflows",
     set: false,
-    value: null
+    value: { flows: [] }
 })
 
 type FileFolder = {
@@ -75,7 +80,6 @@ type FileFolder = {
     type: "folder"
     children: { [name: string]: FileFolder }
 }
-
 type Filesystem = {
     files: { [name: string]: FileFolder },
     fileData: { [name: string]: {
@@ -90,7 +94,6 @@ type Filesystem = {
     filesWereModified: boolean,
     currentFolder: string[],
 }
-
 export let filesystem = $state<State<WithUpdate<Filesystem>>>({
     persistent: "filesystem",
     persistentIgnore: ["fileData", "currentFolder", "filesWereModified"],
@@ -131,10 +134,13 @@ type CommandHistory = {
     output: string,
     outputArr: {file: "stdout" | "stderr", output: string}[]
 }
-export let commandHistory = $state<State<CommandHistory[]>>({
+type CommandHistoryWrapper = {
+    history: CommandHistory[]
+}
+export let commandHistory = $state<State<CommandHistoryWrapper>>({
     persistent: "commandHistory",
     set: true,
-    value: []
+    value: { history: [] }
 });
 
 // Persistent
@@ -166,8 +172,6 @@ export async function load(store: any) {
         if (store.persistent) {
             const storeData = await loadStore(`${store.persistent}.json`);
             if (storeData) {
-                // store.value = Object.fromEntries(await storeData.entries());
-                // store.set = true;
                 const entries = await storeData.entries();
                 const obj: any = {};
                 for (const [key, value] of entries) {
@@ -197,7 +201,6 @@ export async function save(state: any) {
         const storeData = await loadStore(`${state.persistent}.json`);
         for (const [key, value] of Object.entries(state.value || {})) {
             if (!state.persistentIgnore?.includes(key)) {
-                console.log("value: ", value, Object.prototype.toString.call(value));
                 if (Object.prototype.toString.call(value) === '[object Date]') {
                     await storeData.set(key, {type: "date", value: (value as Date).toISOString()});
                     continue;
@@ -206,7 +209,6 @@ export async function save(state: any) {
             }
         }
         state.set = true;
-        console.log(await storeData.entries())
     }
 }
 export async function saveAll() {

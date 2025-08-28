@@ -56,7 +56,7 @@
                     id={id}
                     type="checkbox"
                     bind:checked={value}
-                    onclick={action}
+                    onclick={() => action?.()}
                     class="peer opacity-0 p-1 absolute z-10 cursor-pointer"
                     {...prop}
             />
@@ -86,7 +86,8 @@
                 bind:value={value} {type} name={id} {id}
                 class="w-full px-3 pt-5 pb-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-base focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all {className}"
                 onfocus={() => isFocused = true}
-                onblur={() => isFocused = false}
+                onblur={() => (isFocused = false)}
+                oninput={() => action?.()}
                 {...prop}
         />
     {/if}

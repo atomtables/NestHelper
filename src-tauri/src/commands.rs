@@ -45,7 +45,9 @@ pub(crate) enum ProcessEvent {
 #[serde(rename_all = "camelCase", tag = "event")]
 pub(crate) struct FrontendCommandArg {
     command: Option<String>,
+    cwd: Option<String>,
     frontend: bool,
+    delay: Option<String>
 }
 pub(crate) fn parse_output(username: &str, output: &str, current: u32) -> (bool, u32) {
     if output.starts_with("---STAGE")
@@ -61,11 +63,21 @@ pub(crate) fn parse_output(username: &str, output: &str, current: u32) -> (bool,
     }
     (false, current)
 }
-pub(crate) fn format_commands(username: &str, commands: &Vec<String>) -> String {
-    let mut formatted_commands = format!("echo && echo ---STAGE1-{}-COMPLETE--", username);
+pub(crate) fn format_commands(username: &str, commands: &Vec<FrontendCommandArg>) -> String {
+    let mut formatted_commands = format!("CCWD=/home/{} && cd $CCWD && echo && echo ---STAGE1-{}-COMPLETE--", username, username);
     for (i, command) in commands.iter().enumerate() {
-        formatted_commands += &format!(" && {}", command);
-        formatted_commands += &format!(" && echo && echo ---STAGE{}-{}-COMPLETE--", i + 2, username);
+        if let Some(cwd) = command.cwd.clone() {
+            formatted_commands += &format!(" && CCWD=$(pwd) && cd {}", cwd);
+        }
+        if let Some(comm) = command.command.clone() {
+            formatted_commands += &format!(" && {}", comm);
+        }
+        if let Some(delay) = command.delay.clone() {
+            if (delay.parse::<u32>().is_ok()) {
+                formatted_commands += &format!(" && sleep {}", delay);
+            }
+        }
+        formatted_commands += &format!(" && cd $CCWD && echo && echo ---STAGE{}-{}-COMPLETE--", i + 2, username);
     }
     formatted_commands
 }
@@ -76,17 +88,22 @@ pub async fn run_ssh_flow(
     commands: Vec<FrontendCommandArg>,
     on_event: Channel<ProcessEvent>,
 ) -> Result<(), String> {
-    let mut parsed_commands: Vec<String> = vec![];
+    let mut parsed_commands: Vec<FrontendCommandArg> = vec![];
     let mut max_num_stdin: u32 = 0;
     let written_num_stdin: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
     for command in commands {
         let command = command.clone();
-        if let Some(c) = command.command {
-            parsed_commands.push(c);
+        if let Some(_c) = command.command.clone() {
+            parsed_commands.push(command);
         } else {
             if command.frontend {
                 parsed_commands.push(
-                    "read error && if [ \"$error\" = \"fail\" ]; then exit 1; fi".to_string(),
+                    FrontendCommandArg {
+                        command: Some("read error && if [ \"$error\" = \"fail\" ]; then exit 1; fi".to_string()),
+                        cwd: None,
+                        frontend: true,
+                        delay: None
+                    }
                 );
                 max_num_stdin += 1;
             }

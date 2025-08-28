@@ -62,7 +62,10 @@
                             </div>
                         {/if}
                     </div>
-                    <div>{task.task}</div>
+                    <div class="flex flex-col">
+                        <div>{task.task}</div>
+                        <div class="text-xs text-neutral-300">{task.description || ''}</div>
+                    </div>
                 </div>
                 <Button class="p-2 rounded-full" onclick={() => (popShows[i] = !popShows[i], hideAll(i))}>
                     Output
