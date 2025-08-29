@@ -6,5 +6,4 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [tailwindcss(), enhancedImages(), sveltekit()],
 	resolve: {},
-	base: './',
 });
