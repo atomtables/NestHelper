@@ -4,7 +4,7 @@
     import trash from '$lib/assets/trash.png';
     import {auth, currentFlow, save} from '$lib/state/states.svelte.ts'
     import {userflows} from "$lib/state/states.svelte.ts";
-    import EditingFlow from "#root/Volumes/TheEpcodeFiles/NestHelper/src/routes/(normal)/(secure)/flows/EditingFlow.svelte";
+    import EditingFlow from "./EditingFlow.svelte"
     import Workflow from "$lib/conn/Workflow.svelte.ts";
     import {goto} from "$app/navigation";
     import {confirm} from "$lib/components/Dialog.svelte";

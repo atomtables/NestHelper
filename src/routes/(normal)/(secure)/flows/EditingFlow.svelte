@@ -14,7 +14,7 @@
     import {beforeNavigate, goto} from "$app/navigation";
     import {userflows, load} from "$lib/state/states.svelte.ts";
     import Editor from "$lib/components/Editor.svelte";
-    import EditingJSTask from "#root/Volumes/TheEpcodeFiles/NestHelper/src/routes/(normal)/(secure)/flows/EditingJSTask.svelte";
+    import EditingJSTask from "./EditingJSTask.svelte";
 
     let { editingFlow = $bindable() } = $props();
 
