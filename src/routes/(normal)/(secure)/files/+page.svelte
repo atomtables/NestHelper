@@ -186,7 +186,7 @@ L(json.dumps(E))`
                 filesystem.value.currentFolder = [folder];
             }
         } catch {}
-        if (new Date() - (new Date(filesystem.value?.lastUpdated) || new Date(0)) > 1000 * 60 * 5) {
+        if (!filesystem.value?.lastUpdated || new Date() - (new Date(filesystem.value?.lastUpdated) || new Date(0)) > 1000 * 60 * 5) {
             promise = Command(`python3 -c '${command}'`)
             promise.then(async res => {
                     app.value.status = `Ignoring ${ignore.length} patterns`;
