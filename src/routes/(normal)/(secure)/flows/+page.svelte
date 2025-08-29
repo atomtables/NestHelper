@@ -29,7 +29,7 @@
             }}>+ New Flow</Button>
             </div>
             <div class="flex flex-col flex-wrap gap-5">
-                {#each userflows.value.flows as flow, i (flow)}
+                {#each (userflows.value.flows || []) as flow, i (flow)}
                     <div class=" bg-neutral-800 w-72 h-72 p-5 flex flex-col justify-between">
                         <div class="text-2xl font-bold line-clamp-4">
                             {flow.name}
