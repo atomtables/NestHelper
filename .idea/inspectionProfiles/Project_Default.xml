@@ -5,7 +5,7 @@
     <inspection_tool class="CppDFAEndlessLoop" enabled="false" level="HINT" enabled_by_default="false" editorAttributes="HINT" />
     <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
       <Languages>
-        <language minSize="48" name="Rust" />
+        <language minSize="65" name="Rust" />
       </Languages>
     </inspection_tool>
     <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">

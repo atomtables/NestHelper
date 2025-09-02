@@ -9,6 +9,8 @@ use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{ChildStderr, ChildStdout, Command},
 };
+#[cfg(target_os = "windows")]
+use winapi::um::winbase::CREATE_NO_WINDOW;
 
 // this is all for running an SSH flow.
 #[derive(Clone, Serialize)]
@@ -112,6 +114,19 @@ pub async fn run_ssh_flow(
 
     let commands = parsed_commands;
 
+    #[cfg(windows)]
+    let child = Arc::new(tokio::sync::Mutex::new(
+        Command::new("ssh")
+            .arg(format!("{}@hackclub.app", username))
+            .arg(format_commands(&username, &commands))
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .creation_flags(CREATE_NO_WINDOW)
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("Unable to spawn SSH"),
+    ));
+    #[cfg(unix)]
     let child = Arc::new(tokio::sync::Mutex::new(
         Command::new("ssh")
             .arg(format!("{}@hackclub.app", username))
@@ -310,6 +325,21 @@ pub async fn run_ssh_command(
     username: String,
     command: String,
 ) -> Result<CommandOutput, CommandOutput> {
+    #[cfg(windows)]
+    let child = Command::new("ssh")
+        .arg(format!("{}@hackclub.app", username))
+        .arg(command)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::null())
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn()
+        .map_err(|e| CommandOutput {
+            code: 255,
+            stdout: "".parse().unwrap(),
+            stderr: e.to_string(),
+        })?;
+    #[cfg(unix)]
     let child = Command::new("ssh")
         .arg(format!("{}@hackclub.app", username))
         .arg(command)
@@ -322,6 +352,7 @@ pub async fn run_ssh_command(
             stdout: "".parse().unwrap(),
             stderr: e.to_string(),
         })?;
+
 
     let pid = child.id().expect("Failed to get process ID");
     let app1 = app.clone();
@@ -371,6 +402,15 @@ pub async fn run_ssh_command_with_stream(
     command: String,
     on_event: Channel<ProcessEvent>,
 ) -> Result<(), String> {
+    #[cfg(windows)]
+    let mut child = Command::new("ssh")
+        .arg(format!("{}@hackclub.app", username)).arg(command.clone())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::piped())
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn().map_err(|e| e.to_string())?;
+    #[cfg(unix)]
     let mut child = Command::new("ssh")
         .arg(format!("{}@hackclub.app", username)).arg(command.clone())
         .stdout(std::process::Stdio::piped())
@@ -473,6 +513,14 @@ pub async fn ssh_edit_file(
     remote_path: String,
     new_content: Box<[u8]>
 ) -> Result<(), String> {
+    #[cfg(windows)]
+    let mut ssh = Command::new("ssh")
+        .arg(format!("{}@hackclub.app", username))
+        .arg(format!("dd of={}", remote_path))
+        .stdin(std::process::Stdio::piped())
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn().expect("Unable to spawn SSH");
+    #[cfg(unix)]
     let mut ssh = Command::new("ssh")
         .arg(format!("{}@hackclub.app", username))
         .arg(format!("dd of={}", remote_path))
