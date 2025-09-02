@@ -14,7 +14,7 @@
         }, 1000);
 
         if (!app.value.latestNestData) {
-            currentFlow.value = new Workflow(Flows.startup, "Startup Data Pull");
+            currentFlow.value = new Workflow(Flows.startup(), "Startup Data Pull");
             currentFlow.value.start()
             // wait(currentFlow.value.promise, "Pulling latest data from Nest", "This process may take a while, but is necessary for showing the latest data.");
             currentFlow.value.promise.then(() => app.value.latestNestData = true)

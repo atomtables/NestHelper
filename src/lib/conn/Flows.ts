@@ -1,4 +1,4 @@
-import {caddy as caddyStore, saveAll, server as serverStore, services as servicesStore} from "$lib/state/states.svelte.js";
+import {caddy as caddyStore, saveAll, server as serverStore, services as servicesStore, auth} from "$lib/state/states.svelte.js";
 import {type Task} from "$lib/conn/Workflow.svelte.js";
 import {attempt} from "$lib/helpers/attempt.js";
 import {filesystem} from "$lib/state/states.svelte";
@@ -15,10 +15,10 @@ const server: Task[] = [
     { command: "uptime && echo --separate-- && uptime -s", task: "Getting server stats"},
 ]
 
-const startup: Task[] = [
+const startup: () => Task[] = () => [
     ...caddy,
     ...server,
-    { command: "for file in ~/.config/systemd/user/*; do if [ -f \"$file\" ]; then systemctl --user status \"${file#/home/atomtables/.config/systemd/user/}\" | grep -e Loaded -e Active -e ● -e × -e ○ -e \"Main PID\"; fi; done", task: "Getting systemctl services" },
+    { command: `for file in ~/.config/systemd/user/*; do if [ -f "$file" ]; then systemctl --user status "$\{file#/home/${auth.value.username}/.config/systemd/user/}" | grep -e Loaded -e Active -e ● -e × -e ○ -e "Main PID"; fi; done`, task: "Getting systemctl services" },
     { command: null, frontend: true, promise: (async (outpu, self) => {
             let output = outpu.map(o => o.stdout)
             // parse the output of nest caddy list
