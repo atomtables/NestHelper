@@ -1,6 +1,6 @@
 <script lang="ts">
-    import Spinner from "$lib/components/Spinner.svelte";
-    import {app, auth, error, loadAll} from "$lib/state/states.svelte.ts";
+    import Spinner from "$lib/components/generic/Spinner.svelte";
+    import {app, auth, error, loadAll} from "$lib/state/states.svelte";
     import {onMount, tick} from "svelte";
     import { load } from '@tauri-apps/plugin-store';
     import {goto} from "$app/navigation";

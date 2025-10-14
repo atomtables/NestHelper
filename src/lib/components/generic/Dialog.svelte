@@ -1,7 +1,7 @@
 <script module lang="ts">
     import {createRawSnippet, mount, unmount} from "svelte";
     import Dialog from "./Dialog.svelte"
-    import Input from "$lib/components/Input.svelte";
+    import Input from "$lib/components/generic/Input.svelte";
 
     async function never(promise) {
         let run = true;
@@ -11,7 +11,7 @@
         }
     }
 
-    export const alert = async (title, description, children, manualclose) => {
+    export const alert = async (title, description = '', children = null, manualclose = false) => {
         let state;
         const result = new Promise(resolve => state = resolve);
         let close;
@@ -258,12 +258,12 @@
 </script>
 
 <script>
-    import Button from "$lib/components/Button.svelte";
-    import Spinner from "$lib/components/Spinner.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
+    import Spinner from "$lib/components/generic/Spinner.svelte";
     import {fade} from "svelte/transition";
     import {quadInOut} from "svelte/easing";
 
-    let {open, title, description, actions, children, loading} = $props();
+    let {open = $bindable(), title, description = '', actions = [], children = null, loading = false} = $props();
     const closeF = () => open = false;
 </script>
 

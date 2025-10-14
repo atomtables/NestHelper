@@ -1,9 +1,9 @@
 <script>
     import {flip} from "svelte/animate";
-    import Input from "$lib/components/Input.svelte";
-    import Button from "$lib/components/Button.svelte";
+    import Input from "$lib/components/generic/Input.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
     import {StreamedCommandSvelte} from "$lib/conn/StreamedCommand.svelte.ts";
-    import Spinner from "$lib/components/Spinner.svelte";
+    import Spinner from "$lib/components/generic/Spinner.svelte";
     import {commandHistory, filesystem} from "$lib/state/states.svelte.ts";
     import {onMount} from "svelte";
     import stop from "$lib/assets/stop.png";

@@ -156,7 +156,7 @@ export let server = $state<State<WithUpdate<NestServer>>>({
     value: null
 })
 
-export let currentFlow = $state<State<typeof Workflow>>({
+export let currentFlow = $state<State<Workflow>>({
     set: false,
     value: null
 })

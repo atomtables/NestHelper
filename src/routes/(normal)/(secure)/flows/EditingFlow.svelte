@@ -1,16 +1,16 @@
 <script>
     import {quartInOut, quintIn} from "svelte/easing";
-    import Spinner from "$lib/components/Spinner.svelte";
-    import Button from "$lib/components/Button.svelte";
+    import Spinner from "$lib/components/generic/Spinner.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
     import {slide} from "svelte/transition";
-    import Input from "$lib/components/Input.svelte";
+    import Input from "$lib/components/generic/Input.svelte";
     import trash from '$lib/assets/trash.png';
     import {app, auth, save} from "$lib/state/states.svelte.ts";
     import {onMount, onDestroy, tick} from "svelte";
     import command from '$lib/assets/command.png';
     import frontend from '$lib/assets/frontend.png';
     import {flip} from "svelte/animate";
-    import {confirm, alert} from "$lib/components/Dialog.svelte";
+    import {confirm, alert} from "$lib/components/generic/Dialog.svelte";
     import {beforeNavigate, goto} from "$app/navigation";
     import {userflows, load} from "$lib/state/states.svelte.ts";
     import Editor from "$lib/components/Editor.svelte";

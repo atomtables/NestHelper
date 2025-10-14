@@ -1,9 +1,9 @@
 <script>
-    import Spinner from "$lib/components/Spinner.svelte";
+    import Spinner from "$lib/components/generic/Spinner.svelte";
     import {draw, fade, scale, slide} from "svelte/transition";
     import {onMount} from "svelte";
     import {cubicOut, quartInOut, quintIn, quintInOut} from "svelte/easing";
-    import Button from "$lib/components/Button.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
     import {emit} from "@tauri-apps/api/event";
     import {currentFlow} from "$lib/state/states.svelte.js";
 

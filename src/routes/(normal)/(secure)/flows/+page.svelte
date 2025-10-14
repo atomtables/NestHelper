@@ -1,13 +1,13 @@
 <script>
     import { slide } from 'svelte/transition';
-    import Button from "$lib/components/Button.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
     import trash from '$lib/assets/trash.png';
     import {auth, currentFlow, save} from '$lib/state/states.svelte.ts'
     import {userflows} from "$lib/state/states.svelte.ts";
     import EditingFlow from "./EditingFlow.svelte"
     import Workflow from "$lib/conn/Workflow.svelte.ts";
     import {goto} from "$app/navigation";
-    import {confirm} from "$lib/components/Dialog.svelte";
+    import {confirm} from "$lib/components/generic/Dialog.svelte";
 
     let editingFlow = $state();
 </script>

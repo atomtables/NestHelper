@@ -1,11 +1,11 @@
 <script>
     import {Command} from "$lib/conn/Command.ts";
     import {onMount} from "svelte";
-    import {wait} from "$lib/components/Dialog.svelte";
-    import Spinner from "$lib/components/Spinner.svelte";
+    import {wait} from "$lib/components/generic/Dialog.svelte";
+    import Spinner from "$lib/components/generic/Spinner.svelte";
     import {app, auth, filesystem, save} from "$lib/state/states.svelte.ts";
     import {slide} from "svelte/transition";
-    import {alert, confirm, prompt} from "$lib/components/Dialog.svelte";
+    import {alert, confirm, prompt} from "$lib/components/generic/Dialog.svelte";
     import {open as openDialog} from "@tauri-apps/plugin-dialog";
     import Result from "./Result.svelte";
     import {emit} from "@tauri-apps/api/event";

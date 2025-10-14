@@ -8,8 +8,8 @@
         class: className = '',
         className: containerClassName = '',
         value = $bindable(),
-        action,
-        elements,
+        action = () => null,
+        elements = [],
         ...prop
     } = $props();
 

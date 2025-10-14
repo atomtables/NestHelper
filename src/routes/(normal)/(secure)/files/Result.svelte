@@ -2,11 +2,11 @@
 <script>
     import folder from "$lib/assets/folder.png";
     import file from "$lib/assets/file.png";
-    import Input from "$lib/components/Input.svelte";
-    import Button from "$lib/components/Button.svelte";
-    import {alert} from "$lib/components/Dialog.svelte";
+    import Input from "$lib/components/generic/Input.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
+    import {alert} from "$lib/components/generic/Dialog.svelte";
     import {app, filesystem} from "$lib/state/states.svelte.ts";
-    import {confirm} from "$lib/components/Dialog.svelte";
+    import {confirm} from "$lib/components/generic/Dialog.svelte";
     import {Command} from "$lib/conn/Command.ts";
     import File from "$lib/components/viewers/File.svelte";
     import {supportedBinary, supportedImage} from "$lib/helpers/monaco.ts";

@@ -1,6 +1,6 @@
 import {invoke} from "@tauri-apps/api/core";
 import {auth} from "$lib/state/states.svelte.js";
-import {alert} from "$lib/components/Dialog.svelte"
+import {alert} from "$lib/components/generic/Dialog.svelte"
 
 export const EditFile = async (path: string, data: Uint8Array) => {
     try {

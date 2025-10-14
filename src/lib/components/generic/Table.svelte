@@ -1,7 +1,7 @@
 <script>
-    import Input from "$lib/components/Input.svelte";
+    import Input from "$lib/components/generic/Input.svelte";
     import {slide} from "svelte/transition";
-    import Button from "$lib/components/Button.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
 
     let {
         source,

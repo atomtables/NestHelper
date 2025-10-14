@@ -1,24 +1,25 @@
-<script>
+<script lang='ts'>
     import {quintOut} from "svelte/easing";
     import {onMount, tick} from "svelte";
     import {scale, slide} from "svelte/transition";
     import image from "$lib/assets/favicon.png"
-    import Button from "$lib/components/Button.svelte";
-    import Input from "$lib/components/Input.svelte";
-    import {auth, save, caddy, server, currentFlow} from "$lib/state/states.svelte.ts";
+    import Button from "$lib/components/generic/Button.svelte";
+    import Input from "$lib/components/generic/Input.svelte";
+    import {auth, save, caddy, server, currentFlow} from "$lib/state/states.svelte";
     import Flow from "$lib/components/Flow.svelte";
     import {Channel, invoke} from "@tauri-apps/api/core";
     import {goto} from "$app/navigation";
-    import Workflow from "$lib/conn/Workflow.svelte.ts";
-    import Flows from "$lib/conn/Flows.ts";
+    import Workflow from "$lib/conn/Workflow.svelte";
+    import Flows from "$lib/conn/Flows";
 
     let showChildren = $state(false);
     let screen = $state(0);
 
     let username = $state("");
+    let servername = $state("");
     let disclaimer = $state(false);
 
-    function scaleCircle(node, { delay = 0, duration = 700, easing = quintOut }) {
+    function scaleCircle(node, { delay = 0, duration = 700, easing = quintOut } = {}) {
         // noinspection JSUnusedGlobalSymbols
         return {
             delay,
@@ -56,7 +57,7 @@
             setTimeout(() => {
                 startFlow();
             }, 500)
-        } else if (screen === 3) {
+        } else if (screen === 4) {
             showChildren = false;
             setTimeout(() => goto("/main"), 1000);
         }
@@ -101,10 +102,12 @@
                     <div class="flex flex-row justify-center items-center gap-2">
                         <Input bind:value={username} name="Username" id="username" type="text"
                                className="w-full max-w-md" />
-                        <div>@hackclub.app</div>
+                        <div>@</div>
+                        <Input bind:value={username} name="server" id="server" type="text"
+                               className="w-full max-w-md" />
                     </div>
                     <div class="flex flex-row justify-center items-center gap-2">
-                        <Input type="checkbox" class="w-min" bind:value={disclaimer} />
+                        <Input name='' type="checkbox" class="w-min" bind:value={disclaimer} />
                         <div class="text-xs {!disclaimer && 'animate-pulse'}">
                             I agree to all the warnings as set above and fully maintain that any consequences from the
                             use of this tool are my own responsibility. I have been warned against using this tool to
@@ -114,6 +117,7 @@
                     </div>
                 </div>
             {:else if screen === 2}
+            {:else if screen === 3}
                 <div transition:slide class="w-full">
                     <Flow />
                 </div>
@@ -131,9 +135,9 @@
                 <Button
                     onclick={async () => {await tick(); screen++; await handler(); await tick();}}
                     disabled={
-                        screen >= 3 ||
+                        screen >= 4 ||
                         (screen === 1 && (!username || !disclaimer)) ||
-                        (screen === 2 && !currentFlow.value?.complete)
+                        (screen === 3 && !currentFlow.value?.complete)
                     }
                 >Continue</Button>
             </div>

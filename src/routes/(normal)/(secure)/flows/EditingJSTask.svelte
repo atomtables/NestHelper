@@ -1,8 +1,8 @@
 <script>
     import Editor from "$lib/components/Editor.svelte";
-    import Button from "$lib/components/Button.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
     import {AsyncFunction} from "$lib/state/states.svelte.ts";
-    import {alert} from "$lib/components/Dialog.svelte";
+    import {alert} from "$lib/components/generic/Dialog.svelte";
     import {fade} from "svelte/transition";
     import {createWindow} from "$lib/helpers/WindowCreator.ts";
 

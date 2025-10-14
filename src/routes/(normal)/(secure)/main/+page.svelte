@@ -1,11 +1,11 @@
 <script>
     import {onMount} from "svelte";
-    import Button from "$lib/components/Button.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
     import {app, auth, caddy, currentFlow, server, services, userflows} from "$lib/state/states.svelte.ts";
     import Workflow from "$lib/conn/Workflow.svelte.ts";
     import Flows from "$lib/conn/Flows.ts";
     import {slide} from "svelte/transition";
-    import {wait} from "$lib/components/Dialog.svelte";
+    import {wait} from "$lib/components/generic/Dialog.svelte";
 
     let now = new Date().getTime();
     onMount(() => {

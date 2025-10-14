@@ -1,6 +1,6 @@
 <script>
     import { slide } from 'svelte/transition';
-    import Button from "$lib/components/Button.svelte";
+    import Button from "$lib/components/generic/Button.svelte";
 
     let { items, onselect: onSelect, class: buttonClass, buttonText, direction, children } = $props();
     let open = $state(false);

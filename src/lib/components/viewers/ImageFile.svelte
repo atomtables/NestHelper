@@ -1,12 +1,12 @@
 <script>
     import Editor from "$lib/components/Editor.svelte";
-    import Dropdown from "$lib/components/Dropdown.svelte";
+    import Dropdown from "$lib/components/generic/Dropdown.svelte";
     import {highlighting, supportedLanguages} from "$lib/helpers/monaco.ts";
     import {onMount} from "svelte";
-    import {alert} from "$lib/components/Dialog.svelte";
+    import {alert} from "$lib/components/generic/Dialog.svelte";
     import {filesystem} from "$lib/state/states.svelte.ts";
     import { event } from '@tauri-apps/api';
-    import { confirm } from "$lib/components/Dialog.svelte";
+    import { confirm } from "$lib/components/generic/Dialog.svelte";
     import saveIcon from "$lib/assets/save.png";
     import back from "$lib/assets/back.png";
     import {save} from "@tauri-apps/plugin-dialog";
