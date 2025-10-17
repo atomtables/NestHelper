@@ -12,10 +12,7 @@
     import { supportedBinary, supportedImage } from '$lib/helpers/monaco.ts';
     import ImageFile from '$lib/components/viewers/ImageFile.svelte';
 
-    const sort = (children) =>
-        Object.entries(children || {}).sort(([a, x], [b, y]) =>
-            x.type === 'folder' && y.type === 'folder' ? a.localeCompare(b) : x.type === 'folder' ? -1 : y.type === 'folder' ? 1 : a.localeCompare(b)
-        );
+    const sort = (children) => Object.entries(children || {}).sort(([a, x], [b, y]) => (x.type === 'folder' && y.type === 'folder' ? a.localeCompare(b) : x.type === 'folder' ? -1 : y.type === 'folder' ? 1 : a.localeCompare(b)));
 
     // noinspection JSUnresolvedReference
     let currentFolder = $derived.by(() => {
@@ -79,10 +76,7 @@
         currentFilePath = null;
     };
     const deleteFile = async () => {
-        let [result] = await confirm(
-            'Are you sure you would like to delete this file?',
-            `You are about to delete the file <b>${selectedFile[0]}</b>. Would you like to continue?`
-        );
+        let [result] = await confirm('Are you sure you would like to delete this file?', `You are about to delete the file <b>${selectedFile[0]}</b>. Would you like to continue?`);
         if (!result) return;
 
         let filePath = filesystem.value.currentFolder.join('/') + '/' + selectedFile[0];
@@ -131,10 +125,7 @@
                     : () => {
                           selectedFile = [key, value];
                           selectedFileType = supportedBinary(key) ? 2 : supportedImage(key) ? 1 : 0;
-                          if (
-                              filesystem.value.fileData[folderPath.join('/') + '/' + key] &&
-                              !filesystem.value.fileData[folderPath.join('/') + '/' + key]?.deletedFile
-                          ) {
+                          if (filesystem.value.fileData[folderPath.join('/') + '/' + key] && !filesystem.value.fileData[folderPath.join('/') + '/' + key]?.deletedFile) {
                               currentFilePath = folderPath.join('/') + '/' + key;
                           } else {
                               currentFilePath = null;
@@ -174,21 +165,11 @@
             {#if filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]?.deletedFile}
                 <div class="text-red-500 py-2">This file is marked for deletion. Save changes to delete it.</div>
                 <div>
-                    <Button
-                        destructive
-                        class="text-sm"
-                        onclick={() => (filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`].deletedFile = false)}>Undo deletion</Button
-                    >
+                    <Button destructive class="text-sm" onclick={() => (filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`].deletedFile = false)}>Undo deletion</Button>
                 </div>
             {:else}
                 <div class="flex flex-row pt-4 gap-2 items-center justify-center w-96">
-                    <Input
-                        class="appearance-none w-full flex-2/4"
-                        type="dropdown"
-                        name="File type"
-                        elements={['Text', 'Image', 'Raw Bytes (unimplemented)']}
-                        bind:value={selectedFileType}
-                    />
+                    <Input class="appearance-none w-full flex-2/4" type="dropdown" name="File type" elements={['Text', 'Image', 'Raw Bytes (unimplemented)']} bind:value={selectedFileType} />
                     <Button class="w-full flex-1/2" onclick={loadFile}>Load file</Button>
                 </div>
                 <div>

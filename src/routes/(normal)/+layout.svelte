@@ -107,71 +107,48 @@
     {#if app.value.persistentStoresLoaded && auth.value.username}
         {@const path = page.url.pathname}
         <div class="rounded-2xl flex flex-row items-center h-8 select-none gap-2 z-50">
-            <div
-                class="transition-colors hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 rounded-full w-18.5 h-6 px-2 py-1 ml-2"
-            ></div>
+            <div class="transition-colors hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 rounded-full w-18.5 h-6 px-2 py-1 ml-2"></div>
             <a
                 href="/main"
                 aria-current={path === '/main'}
-                class="z-50 group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path ===
-                    '/main' && 'border-b-2'} p-2"
+                class="z-50 group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/main' && 'border-b-2'} p-2"
             >
                 <img src={image} alt="Home" class="w-6 h-4 object-scale-down" />
-                <div
-                    class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
-                >
-                    Home
-                </div>
+                <div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">Home</div>
             </a>
             <a
                 href="/flows"
                 aria-current={path === '/flows'}
-                class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path ===
-                    '/flows' && 'border-b-2'} p-2"
+                class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/flows' && 'border-b-2'} p-2"
             >
                 <img src={flows} alt="Flows" class="w-6 h-5 object-scale-down" />
-                <div
-                    class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
-                >
-                    Flows
-                </div>
+                <div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">Flows</div>
             </a>
             <a
                 href="/flow"
                 aria-current={path === '/flow'}
-                class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path ===
-                    '/flow' && 'border-b-2'} p-2"
+                class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/flow' && 'border-b-2'} p-2"
             >
                 <img src={flow} alt="Flow" class="w-6 h-4 mt-0.5 object-scale-down" />
-                <div
-                    class="z-50 text-nowrap absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
-                >
+                <div class="z-50 text-nowrap absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
                     Active Flow
                 </div>
             </a>
             <a
                 href="/files"
                 aria-current={path === '/files'}
-                class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path ===
-                    '/files' && 'border-b-2'} p-2"
+                class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/files' && 'border-b-2'} p-2"
             >
                 <img src={files} alt="Flow" class="w-6 h-4 object-scale-down" />
-                <div
-                    class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
-                >
-                    Files
-                </div>
+                <div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">Files</div>
             </a>
             <a
                 href="/command"
                 aria-current={path === '/command'}
-                class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path ===
-                    '/command' && 'border-b-2'} p-2"
+                class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/command' && 'border-b-2'} p-2"
             >
                 <img src={command} alt="Flow" class="w-6 h-4 object-scale-down" />
-                <div
-                    class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
-                >
+                <div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
                     Commands
                 </div>
             </a>
@@ -179,46 +156,20 @@
         <div class="h-8 flex flex-row items-center justify-center gap-1">
             {#if currentFlow.value?.started}
                 <div class="relative inline-block" transition:scale>
-                    <Button
-                        transparent
-                        class="[&]:px-2 grid place-items-center transition-colors w-8 h-8 relative {open && '!bg-neutral-400/50'}"
-                        onclick={() => (open = !open)}
-                    >
+                    <Button transparent class="[&]:px-2 grid place-items-center transition-colors w-8 h-8 relative {open && '!bg-neutral-400/50'}" onclick={() => (open = !open)}>
                         {#if currentFlow.value.complete}
                             <div class="absolute top-0 left-0 right-0 bottom-0 w-8 h-8 flex items-center justify-center">
-                                <div
-                                    transition:fade={{ easing: quintIn }}
-                                    class=" w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center peer-checked:bg-purple-700 transition-colors"
-                                >
+                                <div transition:fade={{ easing: quintIn }} class=" w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center peer-checked:bg-purple-700 transition-colors">
                                     <svg viewBox="0 0 24 24" class="w-4 h-4 text-white scale-100 peer-checked:scale-100">
-                                        <path
-                                            in:draw
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="3"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M5 13l4 4L19 7"
-                                        />
+                                        <path in:draw fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
                             </div>
                         {:else if currentFlow.value.failed}
                             <div class="absolute top-0 left-0 right-0 bottom-0 w-8 h-8 flex items-center justify-center">
-                                <div
-                                    transition:fade
-                                    class="rounded-full w-6 h-6 bg-red-500 flex items-center justify-center peer-checked:bg-red-700 transition-colors"
-                                >
+                                <div transition:fade class="rounded-full w-6 h-6 bg-red-500 flex items-center justify-center peer-checked:bg-red-700 transition-colors">
                                     <svg viewBox="0 0 24 24" class="w-4 h-4 text-white scale-100 peer-checked:scale-100">
-                                        <path
-                                            in:draw
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="3"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M18 6L6 18M6 6l12 12"
-                                        />
+                                        <path in:draw fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12" />
                                     </svg>
                                 </div>
                             </div>
@@ -230,10 +181,7 @@
                     </Button>
 
                     {#if open}
-                        <div
-                            class="absolute z-50 p-5 rounded-2xl top-[calc(100%+0.25rem)] right-0 min-w-max overflow-hidden bg-slate-300 dark:bg-slate-700 shadow-2xl shadow-black"
-                            transition:slide={{ duration: 150 }}
-                        >
+                        <div class="absolute z-50 p-5 rounded-2xl top-[calc(100%+0.25rem)] right-0 min-w-max overflow-hidden bg-slate-300 dark:bg-slate-700 shadow-2xl shadow-black" transition:slide={{ duration: 150 }}>
                             <div class="text-sm">
                                 Running Flow: <b>{currentFlow.value.name}</b>
                             </div>
@@ -262,10 +210,8 @@
                     </Button>
                 </div>
             {/if}
-            <Dropdown
-                items={['Log out']}
-                onselect={(v) => v === 0 && ((auth.value.username = null), saveAll(), goto('/'))}
-                class="mr-2 select-none text-sm bg-black/0! hover:bg-neutral-700! px-1! rounded-none! py-0!">{auth.value.username}@hackclub.app</Dropdown
+            <Dropdown items={['Log out']} onselect={(v) => v === 0 && ((auth.value.username = null), saveAll(), goto('/'))} class="mr-2 select-none text-sm bg-black/0! hover:bg-neutral-700! px-1! rounded-none! py-0!"
+                >{auth.value.username}@hackclub.app</Dropdown
             >
         </div>
     {/if}

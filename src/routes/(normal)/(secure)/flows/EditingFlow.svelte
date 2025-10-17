@@ -31,13 +31,7 @@
             if (!saved) {
                 if (!ignore) e.cancel();
                 let result;
-                if (!ignore)
-                    result = (
-                        await confirm(
-                            'Are you sure you want to leave the page?',
-                            'You are currently editing a flow that has not been saved. Your changes will be lost.'
-                        )
-                    )[0];
+                if (!ignore) result = (await confirm('Are you sure you want to leave the page?', 'You are currently editing a flow that has not been saved. Your changes will be lost.'))[0];
                 if (result) {
                     ignore = true;
                     await goto(e.to.url.href);
@@ -117,14 +111,7 @@
                             {:else}
                                 <div class="-mb-3">This task runs using SSH on your Nest account.</div>
                                 <div class="flex flex-row justify-between items-center w-full gap-2">
-                                    <Input
-                                        action={() => (saved = false)}
-                                        autocorrect="off"
-                                        autocapitalize="off"
-                                        spellcheck="false"
-                                        name="Command"
-                                        bind:value={task.command}
-                                    />
+                                    <Input action={() => (saved = false)} autocorrect="off" autocapitalize="off" spellcheck="false" name="Command" bind:value={task.command} />
                                 </div>
                                 <div class="flex flex-row items-center justify-end w-full gap-5 -mt-5">
                                     <Input action={() => (saved = false)} name="Working directory" bind:value={task.cwd} class="text-xs" />

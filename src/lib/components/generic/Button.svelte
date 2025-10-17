@@ -1,17 +1,7 @@
 <script>
     import Spinner from '$lib/components/generic/Spinner.svelte';
 
-    let {
-        children,
-        onclick,
-        class: className = '',
-        type = 'button',
-        disabled = $bindable(false),
-        transparent = false,
-        destructive = false,
-        disableLoading = false,
-        ...etc
-    } = $props();
+    let { children, onclick, class: className = '', type = 'button', disabled = $bindable(false), transparent = false, destructive = false, disableLoading = false, ...etc } = $props();
 
     let resolving = $state(false);
 

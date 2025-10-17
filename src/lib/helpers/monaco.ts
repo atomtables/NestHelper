@@ -82,10 +82,7 @@ const caddyfileLanguage = {
 
             // Keywords
             [/@[a-zA-Z_]\w*/, 'keyword'],
-            [
-                /\b(?:import|handle|handle_path|route|respond|redir|reverse_proxy|file_server|log|tls|encode|header|request_uri|uri|rewrite|not|method|host|path|expression|basicauth|root|bind)\b/,
-                'keyword',
-            ],
+            [/\b(?:import|handle|handle_path|route|respond|redir|reverse_proxy|file_server|log|tls|encode|header|request_uri|uri|rewrite|not|method|host|path|expression|basicauth|root|bind)\b/, 'keyword'],
 
             // IP addresses, ports, paths
             [/\b\d{1,3}(\.\d{1,3}){3}\b(:\d+)?/, 'number'],
@@ -102,10 +99,7 @@ const caddyfileLanguage = {
             [/}/, { token: 'delimiter.curly', next: '@pop' }],
             [/"([^"\\]|\\.)*$/, 'string.invalid'],
             [/"/, { token: 'string.quote', next: '@string' }],
-            [
-                /\b(?:import|handle|handle_path|route|respond|redir|reverse_proxy|file_server|log|tls|encode|header|request_uri|uri|rewrite|not|method|host|path|expression|basicauth|root|bind)\b/,
-                'keyword',
-            ],
+            [/\b(?:import|handle|handle_path|route|respond|redir|reverse_proxy|file_server|log|tls|encode|header|request_uri|uri|rewrite|not|method|host|path|expression|basicauth|root|bind)\b/, 'keyword'],
             [/:?\d+/, 'number'],
             [/\/[^\s{}"]*/, 'string.path'],
             [/[^\s{}"]+/, ''],
@@ -180,24 +174,7 @@ export const supportedBinary = (filename: string) => {
     return binaryExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
 };
 export const supportedImage = (filename: string) => {
-    const imageExtensions = [
-        '.apng',
-        '.png',
-        '.avif',
-        '.gif',
-        '.jpg',
-        '.jpeg',
-        '.jfif',
-        '.pjpeg',
-        '.pjp',
-        '.svg',
-        '.webp',
-        '.bmp',
-        '.ico',
-        '.cur',
-        '.tif',
-        '.tiff',
-    ];
+    const imageExtensions = ['.apng', '.png', '.avif', '.gif', '.jpg', '.jpeg', '.jfif', '.pjpeg', '.pjp', '.svg', '.webp', '.bmp', '.ico', '.cur', '.tif', '.tiff'];
     return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
 };
 

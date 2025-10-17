@@ -79,8 +79,7 @@
                         <br /><br />
                         It often takes a while to do things on Nest, with all the lag and such, so setting up a server to run might start to get pretty annoying.
                         <br /><br />
-                        NestHelper solves this by allowing you to make all your changes before committing them to the server, allowing you to go get a cup of coffee
-                        while your latest commit gets pulled and set up on the server.
+                        NestHelper solves this by allowing you to make all your changes before committing them to the server, allowing you to go get a cup of coffee while your latest commit gets pulled and set up on the server.
                     </div>
                 </div>
             {:else if screen === 1}
@@ -89,21 +88,12 @@
                         Warnings:
                         <ul class="list-disc pl-5 pt-2 text-sm">
                             <li>
-                                <b>NestHelper is by no means a sanctioned tool</b>, meaning that if a glitch occurs or someone gets mad (or you do something
-                                bad), your use of NestHelper may result in consequences such as a ban. You have been warned.
+                                <b>NestHelper is by no means a sanctioned tool</b>, meaning that if a glitch occurs or someone gets mad (or you do something bad), your use of NestHelper may result in consequences such as a ban. You have
+                                been warned.
                             </li>
-                            <li>
-                                It is recommended that you access Nest via SSH at least once before using NestHelper to ensure there are no authentication
-                                errors.
-                            </li>
-                            <li>
-                                Make sure that the you enter your current username and your SSH key is stored in your local SSH folder. Failed login attempts
-                                may result in an IP ban.
-                            </li>
-                            <li>
-                                NestHelper may have bugs or glitches that may result in data loss. Ensure that all important files have been backed up as
-                                necessary.
-                            </li>
+                            <li>It is recommended that you access Nest via SSH at least once before using NestHelper to ensure there are no authentication errors.</li>
+                            <li>Make sure that the you enter your current username and your SSH key is stored in your local SSH folder. Failed login attempts may result in an IP ban.</li>
+                            <li>NestHelper may have bugs or glitches that may result in data loss. Ensure that all important files have been backed up as necessary.</li>
                         </ul>
                     </div>
                     <div class="flex flex-row justify-center items-center gap-2">
@@ -114,9 +104,8 @@
                     <div class="flex flex-row justify-center items-center gap-2">
                         <Input name="" type="checkbox" class="w-min" bind:value={disclaimer} />
                         <div class="text-xs {!disclaimer && 'animate-pulse'}">
-                            I agree to all the warnings as set above and fully maintain that any consequences from the use of this tool are my own
-                            responsibility. I have been warned against using this tool to break the Nest terms of service and I will not use it to do so. I will
-                            be responsible and ensure that I do not abuse this tool or distribute a version that will result in abuse.
+                            I agree to all the warnings as set above and fully maintain that any consequences from the use of this tool are my own responsibility. I have been warned against using this tool to break the Nest terms of service
+                            and I will not use it to do so. I will be responsible and ensure that I do not abuse this tool or distribute a version that will result in abuse.
                         </div>
                     </div>
                 </div>

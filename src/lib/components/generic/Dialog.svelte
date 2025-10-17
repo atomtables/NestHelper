@@ -266,16 +266,8 @@
 </script>
 
 {#if open}
-    <div
-        class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/50 backdrop-blur-sm"
-        transition:fade={{ delay: 50, duration: 150, easing: quadInOut }}
-    >
-        <div
-            class="bg-neutral-800 shadow-xl w-full min-w-md max-w-2xl mx-4"
-            role="dialog"
-            aria-modal="true"
-            transition:fade={{ duration: 150, easing: quadInOut }}
-        >
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/50 backdrop-blur-sm" transition:fade={{ delay: 50, duration: 150, easing: quadInOut }}>
+        <div class="bg-neutral-800 shadow-xl w-full min-w-md max-w-2xl mx-4" role="dialog" aria-modal="true" transition:fade={{ duration: 150, easing: quadInOut }}>
             <div class="px-6 pt-5">
                 <h2 class="text-2xl font-bold flex flex-row items-center gap-2">
                     {#if loading}

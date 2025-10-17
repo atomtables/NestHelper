@@ -48,12 +48,7 @@ export type Task = {
     command: string;
     cwd?: string;
     frontend?: boolean;
-    promise?: (
-        outputs: { stdout: string; stderr: string }[],
-        log: (str: string) => void,
-        logError: (str: string) => void,
-        fetchNoCors: typeof LocalFetch
-    ) => Promise<void>;
+    promise?: (outputs: { stdout: string; stderr: string }[], log: (str: string) => void, logError: (str: string) => void, fetchNoCors: typeof LocalFetch) => Promise<void>;
     promiseCode?: string;
     delay?: string; // seconds to wait after this task is done before moving on
 

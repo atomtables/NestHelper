@@ -18,11 +18,7 @@
 </script>
 
 <div class="relative inline-block">
-    <Button
-        transparent
-        class="{!children && '[&]:px-0 [&]:py-3'} grid place-items-center transition-colors {open && '!bg-neutral-400/50'} {buttonClass}"
-        onclick={toggle}
-    >
+    <Button transparent class="{!children && '[&]:px-0 [&]:py-3'} grid place-items-center transition-colors {open && '!bg-neutral-400/50'} {buttonClass}" onclick={toggle}>
         {#if children}
             {@render children()}
         {:else}
@@ -31,15 +27,9 @@
     </Button>
 
     {#if open}
-        <div
-            class="absolute {getDirection()} z-50 py-1 min-w-max overflow-auto max-h-96 bg-slate-300 dark:bg-slate-700 shadow-md"
-            transition:slide={{ duration: 150 }}
-        >
+        <div class="absolute {getDirection()} z-50 py-1 min-w-max overflow-auto max-h-96 bg-slate-300 dark:bg-slate-700 shadow-md" transition:slide={{ duration: 150 }}>
             {#each items as item, ind}
-                <button
-                    class="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-500/40 active:bg-neutral-400/40 transition-colors"
-                    onclick={() => handleSelect(ind)}
-                >
+                <button class="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-500/40 active:bg-neutral-400/40 transition-colors" onclick={() => handleSelect(ind)}>
                     {item}
                 </button>
             {/each}

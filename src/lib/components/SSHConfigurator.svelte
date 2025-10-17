@@ -66,28 +66,13 @@
     <div class="flex flex-row justify-center items-center gap-2 w-full">
         <Input name="" type="checkbox" class="w-min pl-2" bind:value={external_identity} />
         <div class="w-max shrink-0 font-bold transition-all {!external_identity && 'opacity-50 pointer-events-none'}">-i</div>
-        <Input
-            bind:value={keyFile}
-            class="transition-all {!external_identity && 'opacity-50 pointer-events-none'}"
-            type="text"
-            name="Absolute path to SSH key file"
-        />
+        <Input bind:value={keyFile} class="transition-all {!external_identity && 'opacity-50 pointer-events-none'}" type="text" name="Absolute path to SSH key file" />
     </div>
     <div class="flex flex-row justify-center items-center gap-2 w-full">
         <Input name="" type="checkbox" class="w-min pl-2" bind:value={jump_server_selected} />
         <div class="w-max shrink-0 font-bold transition-all {!jump_server_selected && 'opacity-50 pointer-events-none'}">-J</div>
-        <Input
-            class="transition-all {!jump_server_selected && 'opacity-50 pointer-events-none'}"
-            type="text"
-            name="Jump Server Name (username@server)"
-            bind:value={jumpServer}
-        />
-        <Input
-            class="transition-all {!jump_server_selected && 'opacity-50 pointer-events-none'}"
-            type="password"
-            name="Jump Server password"
-            bind:value={jumpPassword}
-        />
+        <Input class="transition-all {!jump_server_selected && 'opacity-50 pointer-events-none'}" type="text" name="Jump Server Name (username@server)" bind:value={jumpServer} />
+        <Input class="transition-all {!jump_server_selected && 'opacity-50 pointer-events-none'}" type="password" name="Jump Server password" bind:value={jumpPassword} />
     </div>
     <Input class="transition-all" type="text" name="Other SSH switches" bind:value={switches} />
 </div>

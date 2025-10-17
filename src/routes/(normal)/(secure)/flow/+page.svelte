@@ -17,9 +17,7 @@
         </div>
         <div class="rounded-2xl bg-neutral-900 p-5 flex flex-col gap-2">
             <div>
-                Status: <b
-                    >{currentFlow.value.complete ? 'Completed' : currentFlow.value.failed ? 'Failed' : currentFlow.value.started ? 'Ongoing' : 'Pending'}</b
-                >
+                Status: <b>{currentFlow.value.complete ? 'Completed' : currentFlow.value.failed ? 'Failed' : currentFlow.value.started ? 'Ongoing' : 'Pending'}</b>
             </div>
             <div>
                 Started: <b>{new Date(currentFlow.value.startedAt).toLocaleTimeString()}</b>

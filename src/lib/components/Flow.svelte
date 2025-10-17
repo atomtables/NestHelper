@@ -26,44 +26,19 @@
                                 <Spinner type="secondary" />
                             </div>
                         {:else if task.state === 'done'}
-                            <div
-                                transition:fade={{ easing: quintIn }}
-                                class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center peer-checked:bg-purple-700 transition-colors"
-                            >
+                            <div transition:fade={{ easing: quintIn }} class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center peer-checked:bg-purple-700 transition-colors">
                                 <svg viewBox="0 0 24 24" class="w-5 h-5 text-white scale-100 peer-checked:scale-100">
-                                    <path
-                                        in:draw
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="3"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M5 13l4 4L19 7"
-                                    />
+                                    <path in:draw fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
                         {:else if task.state === 'failed'}
-                            <div
-                                transition:fade
-                                class="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center peer-checked:bg-red-700 transition-colors"
-                            >
+                            <div transition:fade class="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center peer-checked:bg-red-700 transition-colors">
                                 <svg viewBox="0 0 24 24" class="w-5 h-5 text-white scale-100 peer-checked:scale-100">
-                                    <path
-                                        in:draw
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="3"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M18 6L6 18M6 6l12 12"
-                                    />
+                                    <path in:draw fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12" />
                                 </svg>
                             </div>
                         {:else}
-                            <div
-                                transition:fade={{ easing: quintIn }}
-                                class="w-8 h-8 rounded-full border-3 border-blue-500 dark:border-blue-500 animate-pulse flex items-center justify-center transition-colors"
-                            ></div>
+                            <div transition:fade={{ easing: quintIn }} class="w-8 h-8 rounded-full border-3 border-blue-500 dark:border-blue-500 animate-pulse flex items-center justify-center transition-colors"></div>
                         {/if}
                     </div>
                     <div class="flex flex-col">
@@ -73,10 +48,7 @@
                 </div>
                 <Button class="p-2 rounded-full" onclick={() => ((popShows[i] = !popShows[i]), hideAll(i))}>Output</Button>
                 {#if window.matchMedia('(min-width: 40rem)').matches && popShows[i]}
-                    <div
-                        class="absolute flex flex-col overflow-scroll scroll-auto bg-neutral-200 dark:bg-neutral-900 right-28 h-48 w-96 lg:w-4/5 p-5 z-50 shadow-2xl origin-right"
-                        transition:scale={{ duration: 200, easing: quartInOut }}
-                    >
+                    <div class="absolute flex flex-col overflow-scroll scroll-auto bg-neutral-200 dark:bg-neutral-900 right-28 h-48 w-96 lg:w-4/5 p-5 z-50 shadow-2xl origin-right" transition:scale={{ duration: 200, easing: quartInOut }}>
                         {@html task.output}
                     </div>
                 {/if}
@@ -92,11 +64,7 @@
 
 {#if Object.entries(popShows).find(([k, v]) => v) && !window.matchMedia('(min-width: 40rem)').matches}
     <div class="absolute p-8 top-0 right-0 left-0 bottom-0" onclick={() => (popShows = {})}>
-        <div
-            class="p-5 flex flex-col overflow-scroll scroll-auto h-full w-full z-50 shadow-2xl bg-neutral-200 dark:bg-neutral-900"
-            transition:scale={{ duration: 200, easing: quartInOut }}
-            onclick={(e) => e.stopPropagation()}
-        >
+        <div class="p-5 flex flex-col overflow-scroll scroll-auto h-full w-full z-50 shadow-2xl bg-neutral-200 dark:bg-neutral-900" transition:scale={{ duration: 200, easing: quartInOut }} onclick={(e) => e.stopPropagation()}>
             {@html currentFlow.value?.tasks[Object.entries(popShows).find(([k, v]) => v)[0]].output}
         </div>
     </div>

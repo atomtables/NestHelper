@@ -61,11 +61,7 @@
                 class="group relative cursor-pointer text-sm text-neutral-300 shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 transition-colors"
             >
                 <img src={back} alt="back" class="h-5" />
-                <span
-                    class="z-50 absolute -bottom-8 py-1 px-2 left-0 text-nowrap bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
-                >
-                    Back
-                </span>
+                <span class="z-50 absolute -bottom-8 py-1 px-2 left-0 text-nowrap bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"> Back </span>
             </button>
             <div class="text-sm text-neutral-300 grow">{filePath}</div>
             <button
@@ -73,9 +69,7 @@
                 class="group relative cursor-pointer text-sm text-neutral-300 shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 transition-colors"
             >
                 <img src={saveIcon} alt="save" class="h-5" />
-                <span
-                    class="z-50 absolute -bottom-8 py-1 px-2 left-1/2 text-nowrap -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
-                >
+                <span class="z-50 absolute -bottom-8 py-1 px-2 left-1/2 text-nowrap -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
                     Save file
                 </span>
             </button>

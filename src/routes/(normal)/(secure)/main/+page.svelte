@@ -31,25 +31,14 @@
                 <Spinner />
                 {#if currentFlow.value?.failed}
                     <div>Failed to run startup flow.</div>
-                    <Button
-                        onclick={() => (
-                            (currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull')),
-                            currentFlow.value.start(),
-                            currentFlow.value.promise.then(() => currentFlow.value.complete && reset())
-                        )}>Restart</Button
-                    >
+                    <Button onclick={() => ((currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull')), currentFlow.value.start(), currentFlow.value.promise.then(() => currentFlow.value.complete && reset()))}>Restart</Button>
                 {:else if currentFlow.value}
                     <div>
                         Loading {currentFlow.value.name}... {currentFlow.value.task}...
                     </div>
                 {:else}
                     <div>You need to run the startup flow before continuing.</div>
-                    <Button
-                        onclick={() => (
-                            (currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull')),
-                            currentFlow.value.start(),
-                            currentFlow.value.promise.then(() => currentFlow.value.complete && reset())
-                        )}>Load flow</Button
+                    <Button onclick={() => ((currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull')), currentFlow.value.start(), currentFlow.value.promise.then(() => currentFlow.value.complete && reset()))}>Load flow</Button
                     >
                 {/if}
             </div>
@@ -65,8 +54,7 @@
                 <div class="text-sm">Services</div>
                 <div class="flex flex-row items-center justify-center gap-2 text-7xl font-bold tracking-wider">
                     <span
-                        class="relative flex size-8 mx-4 {services.value?.services.filter((s) => s.active === 'active').length ===
-                        services.value?.services.length
+                        class="relative flex size-8 mx-4 {services.value?.services.filter((s) => s.active === 'active').length === services.value?.services.length
                             ? '*:bg-green-500'
                             : services.value?.services.filter((s) => s.active === 'active').length > services.value?.services.length / 2
                               ? '*:bg-yellow-500'

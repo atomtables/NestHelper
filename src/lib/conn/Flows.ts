@@ -111,9 +111,7 @@ const startup: () => Task[] = () => [
             };
 
             let services = output[6];
-            let servicesPreprocess = services.matchAll(
-                /[●×] (.+?\.service) ?-? ?(.+?)?\s.+Loaded: (.*) \((.+?); (.+?); preset: (.+?)\)\s+Active: (.*?) \((.*)\) since (.*?);.*\s.*?Main PID: (\d+) \((.*)\)/gm
-            );
+            let servicesPreprocess = services.matchAll(/[●×] (.+?\.service) ?-? ?(.+?)?\s.+Loaded: (.*) \((.+?); (.+?); preset: (.+?)\)\s+Active: (.*?) \((.*)\) since (.*?);.*\s.*?Main PID: (\d+) \((.*)\)/gm);
 
             let service: IteratorResult<RegExpExecArray, any>;
             servicesStore.set = true;

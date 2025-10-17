@@ -119,10 +119,7 @@ L(json.dumps(E))`;
             return;
         }
         if (filesystem.value.files.children[filename]) {
-            let [result] = await confirm(
-                'File already exists',
-                `The file <b>${filename}</b> already exists in the current folder. Would you like to overwrite it?`
-            );
+            let [result] = await confirm('File already exists', `The file <b>${filename}</b> already exists in the current folder. Would you like to overwrite it?`);
             if (!result) return;
         }
         filesystem.value.fileData[`${folderPath}/${filename}`] = {
@@ -159,10 +156,7 @@ L(json.dumps(E))`;
         let filename = file.split('/').pop();
         let folderPath = filesystem.value.currentFolder.join('/') + '/' + filename;
         if (filesystem.value.fileData[folderPath]) {
-            let [result] = await confirm(
-                'File already exists',
-                `The file <b>${filename}</b> already exists in the current folder. Would you like to overwrite it?`
-            );
+            let [result] = await confirm('File already exists', `The file <b>${filename}</b> already exists in the current folder. Would you like to overwrite it?`);
             if (!result) return;
         }
         let cur = filesystem.value.files;

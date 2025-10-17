@@ -60,10 +60,7 @@
                                 <Button
                                     destructive
                                     onclick={async () => {
-                                        let [result] = await confirm(
-                                            'Delete Flow',
-                                            'Are you sure you would like to delete this flow? This action cannot be undone.'
-                                        );
+                                        let [result] = await confirm('Delete Flow', 'Are you sure you would like to delete this flow? This action cannot be undone.');
                                         if (result) {
                                             userflows.value.flows.splice(i, 1);
                                             userflows.set = true;

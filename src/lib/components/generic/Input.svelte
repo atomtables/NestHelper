@@ -1,18 +1,7 @@
 <script>
     import { draw } from 'svelte/transition';
 
-    let {
-        name,
-        type = 'text',
-        id = name,
-        class: className = '',
-        className: containerClassName = '',
-        value = $bindable(),
-        action = () => null,
-        noautomodify = false,
-        elements = [],
-        ...prop
-    } = $props();
+    let { name, type = 'text', id = name, class: className = '', className: containerClassName = '', value = $bindable(), action = () => null, noautomodify = false, elements = [], ...prop } = $props();
 
     let isFocused = $state(false);
     let hasText = $derived((value || (typeof value === 'number' && value + 1)) && (value?.length > 0 || value + 1 >= 1));
@@ -65,15 +54,7 @@
             >
                 {#if value}
                     <svg viewBox="0 0 24 24" class="w-4 h-4 text-white scale-100 peer-checked:scale-100">
-                        <path
-                            in:draw={{ duration: 150 }}
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="3"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M5 13l4 4L19 7"
-                        />
+                        <path in:draw={{ duration: 150 }} fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                 {/if}
             </button>

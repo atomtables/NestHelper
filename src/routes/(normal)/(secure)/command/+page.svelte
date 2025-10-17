@@ -119,9 +119,7 @@
                         }}
                     >
                         <span class="text-xs text-gray-300">
-                            {dateIsSameDay(new Date(), new Date(cmd.timestamp))
-                                ? new Date(cmd.timestamp).toLocaleTimeString()
-                                : new Date(cmd.timestamp).toLocaleString()}
+                            {dateIsSameDay(new Date(), new Date(cmd.timestamp)) ? new Date(cmd.timestamp).toLocaleTimeString() : new Date(cmd.timestamp).toLocaleString()}
                             • {@html cmd?.returnCode === 0
                                 ? '<span class="text-green-400">success</span>'
                                 : cmd?.returnCode !== undefined
@@ -156,10 +154,7 @@
                     <div class="flex flex-row items-center justify-start gap-2 w-full py-2 transition-all">
                         {#if currentCommand?.state === 'ongoing'}
                             <div transition:slide={{ duration: 150 }}>
-                                <button
-                                    onclick={() => currentCommand.promise.cancel()}
-                                    class="group relative w-8 h-8 bg-purple-800 hover:bg-purple-700 active:bg-purple-600 cursor-pointer flex items-center justify-center rounded-full"
-                                >
+                                <button onclick={() => currentCommand.promise.cancel()} class="group relative w-8 h-8 bg-purple-800 hover:bg-purple-700 active:bg-purple-600 cursor-pointer flex items-center justify-center rounded-full">
                                     <img src={stop} alt="stop current process" class="w-4" />
                                     <span
                                         class="z-50 text-nowrap absolute -top-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
@@ -171,10 +166,7 @@
                         {/if}
                         {#if currentCommand?.returnCode !== undefined}
                             <div transition:slide={{ duration: 150 }}>
-                                <button
-                                    onclick={() => writeOutputToFile(currentCommand)}
-                                    class="group relative w-8 h-8 bg-purple-800 hover:bg-purple-700 active:bg-purple-600 cursor-pointer flex items-center justify-center rounded-full"
-                                >
+                                <button onclick={() => writeOutputToFile(currentCommand)} class="group relative w-8 h-8 bg-purple-800 hover:bg-purple-700 active:bg-purple-600 cursor-pointer flex items-center justify-center rounded-full">
                                     <img src={save} alt="stop current process" class="w-4" />
                                     <span
                                         class="z-50 text-nowrap absolute -top-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all"
