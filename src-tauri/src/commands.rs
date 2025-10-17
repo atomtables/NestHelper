@@ -521,6 +521,13 @@ pub async fn run_ssh_command(
     app: AppHandle,
     command: String,
 ) -> Result<CommandOutput, CommandOutput> {
+    let store = app.store("auth.json").expect("Unable to access store");
+    let username2 = store
+        .get("username")
+        .expect("Unable to get username")
+        .to_owned();
+    let username1 = username2.as_str().unwrap();
+    let username = username1.to_owned().clone();
     let settings_store = app
         .store("sshsettings.json")
         .expect("Unable to access store");
@@ -616,10 +623,16 @@ pub async fn run_ssh_command(
 #[tauri::command]
 pub async fn run_ssh_command_with_stream(
     app: AppHandle,
-    username: String,
     command: String,
     on_event: Channel<ProcessEvent>,
 ) -> Result<(), String> {
+    let store = app.store("auth.json").expect("Unable to access store");
+    let username2 = store
+        .get("username")
+        .expect("Unable to get username")
+        .to_owned();
+    let username1 = username2.as_str().unwrap();
+    let username = username1.to_owned().clone();
     let settings_store = app
         .store("sshsettings.json")
         .expect("Unable to access store");
@@ -754,10 +767,16 @@ pub async fn run_ssh_command_with_stream(
 #[tauri::command]
 pub async fn ssh_edit_file(
     app: AppHandle,
-    username: String,
     remote_path: String,
     new_content: Box<[u8]>,
 ) -> Result<(), String> {
+    let store = app.store("auth.json").expect("Unable to access store");
+    let username2 = store
+        .get("username")
+        .expect("Unable to get username")
+        .to_owned();
+    let username1 = username2.as_str().unwrap();
+    let username = username1.to_owned().clone();
     let settings_store = app
         .store("sshsettings.json")
         .expect("Unable to access store");

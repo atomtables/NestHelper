@@ -12,7 +12,7 @@
     import {supportedBinary, supportedImage} from "$lib/helpers/monaco.ts";
     import ImageFile from "$lib/components/viewers/ImageFile.svelte";
 
-    const sort = children => Object.entries(children)
+    const sort = children => Object.entries(children || {})
         .sort(([a,x], [b,y]) => x.type === 'folder' && y.type === 'folder' ? a.localeCompare(b) :
             x.type === 'folder' ? -1 : y.type === 'folder' ? 1 : a.localeCompare(b))
 
