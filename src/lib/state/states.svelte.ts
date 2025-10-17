@@ -166,6 +166,19 @@ export let error = $state<State<string>>({
     value: null
 })
 
+type SSHSettings = {
+    jumpServer: string,
+    jumpPassword: string,
+    keyFile: string,
+    switches: string,
+    keyPassphrase: string
+}
+export let sshSettings = $state<State<SSHSettings>>({
+    set: false,
+    value: null,
+    persistent: "sshsettings"
+})
+
 export async function load(store: any) {
     await tick();
     if (store && typeof store === 'object' && 'set' in store && 'value' in store) {
@@ -175,14 +188,20 @@ export async function load(store: any) {
                 const entries = await storeData.entries();
                 const obj: any = {};
                 for (const [key, value] of entries) {
-                    if (value["type"] === 'date' && typeof value["value"] === 'string') {
+                    if (value?.["type"] === 'date' && typeof value?.["value"] === 'string') {
                         obj[key] = new Date(value["value"]);
+                        continue;
+                    }
+                    if (value !== false && (!value || (value as any).length === 0 || Object.keys(value || {}).length === 0)) {
+                        obj[key] = null
                         continue;
                     }
                     obj[key] = value;
                 }
-                store.value = obj;
+                if (Object.keys(obj).length === 0) store.value = null;
+                else store.value = obj;
             }
+            console.log(store, storeData)
         }
     }
 }

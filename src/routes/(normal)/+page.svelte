@@ -1,6 +1,6 @@
 <script lang="ts">
     import Spinner from "$lib/components/generic/Spinner.svelte";
-    import {app, auth, error, loadAll} from "$lib/state/states.svelte";
+    import {app, auth, caddy, error, loadAll} from "$lib/state/states.svelte";
     import {onMount, tick} from "svelte";
     import { load } from '@tauri-apps/plugin-store';
     import {goto} from "$app/navigation";
@@ -20,7 +20,12 @@
                 }, 2000)
                 return;
             }
-            await goto("/main")
+            try {
+                await goto("/main")
+            } catch (e) {
+                console.error("error going to main, may be due to lack of data", e)
+                await goto('/flow')
+            }
         } catch (e) {
             console.error("Failed to load data:", e);
             error.value = "Failed to load application data. Please check your configuration.";

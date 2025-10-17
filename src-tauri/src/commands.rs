@@ -1,16 +1,80 @@
 use crate::kill_pid::kill_process_by_pid;
+use crate::sshasset::get_sshpass_plink;
 use serde::{Deserialize, Serialize};
+#[cfg(windows)]
+use std::ptr::null;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Event, Listener};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tauri_plugin_store::StoreExt;
+use tokio::io::AsyncWriteExt;
+use tokio::time::sleep;
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{ChildStderr, ChildStdout, Command},
 };
 #[cfg(target_os = "windows")]
 use winapi::um::winbase::CREATE_NO_WINDOW;
+
+#[macro_export]
+macro_rules! command {
+    ($sshpass_plink:expr, $username:expr, $key_passphrase:expr, $jump_server:expr, $jump_password:expr, $key_file:expr, $switches:expr, $commands:expr) => {{
+        let sshpass_plink_cloned = $sshpass_plink.clone();
+        let mut command = Command::new(&sshpass_plink_cloned);
+
+        if let Some(ref passphrase) = $key_passphrase.as_str() {
+            let pass_args = vec![
+                "-p",
+                passphrase,
+                "-P",
+                "passphrase",
+            ];
+            command.args(pass_args);
+        }
+
+        command.arg("ssh");
+
+        if let Some(jump) = $jump_server.as_str() {
+            if let Some(pass) = $jump_password.as_str() {
+                command.arg(format!(
+                    "-oProxyCommand=\"{} -p '{}' ssh -W %h:%p {}\"",
+                    sshpass_plink_cloned, pass, jump
+                ));
+            } else {
+                command.arg(format!(
+                    "-oProxyCommand=\"{} ssh -W %h:%p {}\"",
+                    sshpass_plink_cloned, jump
+                ));
+            }
+        }
+
+        command
+            .arg(format!("{}@hackclub.app", $username))
+            .args(
+                (if $key_file.as_str().is_some() {
+                    vec!["-i", $key_file.as_str().unwrap()]
+                } else {
+                    vec![]
+                })
+                .into_iter()
+                .chain(if $switches.as_str().is_some() {
+                    $switches
+                        .as_str()
+                        .unwrap()
+                        .split(" ")
+                        .collect::<Vec<&str>>()
+                } else {
+                    vec![]
+                })
+                .collect::<Vec<&str>>(),
+            )
+            .arg($commands);
+
+        command
+    }};
+}
 
 // this is all for running an SSH flow.
 #[derive(Clone, Serialize)]
@@ -49,7 +113,7 @@ pub(crate) struct FrontendCommandArg {
     command: Option<String>,
     cwd: Option<String>,
     frontend: bool,
-    delay: Option<String>
+    delay: Option<String>,
 }
 pub(crate) fn parse_output(username: &str, output: &str, current: u32) -> (bool, u32) {
     if output.starts_with("---STAGE")
@@ -66,7 +130,10 @@ pub(crate) fn parse_output(username: &str, output: &str, current: u32) -> (bool,
     (false, current)
 }
 pub(crate) fn format_commands(username: &str, commands: &Vec<FrontendCommandArg>) -> String {
-    let mut formatted_commands = format!("CCWD=/home/{} && cd $CCWD && echo && echo ---STAGE1-{}-COMPLETE--", username, username);
+    let mut formatted_commands = format!(
+        "CCWD=/home/{} && cd $CCWD && echo && echo ---STAGE1-{}-COMPLETE--",
+        username, username
+    );
     for (i, command) in commands.iter().enumerate() {
         if let Some(cwd) = command.cwd.clone() {
             formatted_commands += &format!(" && CCWD=$(pwd) && cd {}", cwd);
@@ -79,14 +146,18 @@ pub(crate) fn format_commands(username: &str, commands: &Vec<FrontendCommandArg>
                 formatted_commands += &format!(" && sleep {}", delay);
             }
         }
-        formatted_commands += &format!(" && cd $CCWD && echo && echo ---STAGE{}-{}-COMPLETE--", i + 2, username);
+        formatted_commands += &format!(
+            " && cd $CCWD && echo && echo ---STAGE{}-{}-COMPLETE--",
+            i + 2,
+            username
+        );
     }
     formatted_commands
 }
+
 #[tauri::command]
 pub async fn run_ssh_flow(
     app: AppHandle,
-    username: String,
     commands: Vec<FrontendCommandArg>,
     on_event: Channel<ProcessEvent>,
 ) -> Result<(), String> {
@@ -99,14 +170,12 @@ pub async fn run_ssh_flow(
             parsed_commands.push(command);
         } else {
             if command.frontend {
-                parsed_commands.push(
-                    FrontendCommandArg {
-                        command: Some("read error && if [ \"$error\" = \"fail\" ]; then exit 1; fi".to_string()),
-                        cwd: None,
-                        frontend: true,
-                        delay: None
-                    }
-                );
+                parsed_commands.push(FrontendCommandArg {
+                    command: Some("read error".to_string()),
+                    cwd: None,
+                    frontend: true,
+                    delay: None,
+                });
                 max_num_stdin += 1;
             }
         }
@@ -114,11 +183,66 @@ pub async fn run_ssh_flow(
 
     let commands = parsed_commands;
 
+    let store = app.store("auth.json").expect("Unable to access store");
+    let username2 = store
+        .get("username")
+        .expect("Unable to get username")
+        .to_owned();
+    let username1 = username2.as_str().unwrap();
+    let username = username1.to_owned().clone();
+    println!("{}", username);
+
+    let settings_store = app
+        .store("sshsettings.json")
+        .expect("Unable to access store");
+    let switches = settings_store.get("switches");
+    let switches_some = switches.is_some();
+    let switches_freed = switches.unwrap_or("".into());
+    let jump_server = settings_store.get("jumpServer");
+    let jump_server_some = jump_server.is_some();
+    let jump_server_freed = jump_server.unwrap_or("".into());
+    let jump_password = settings_store.get("jumpPassword");
+    let jump_password_some = jump_password.is_some();
+    let jump_password_freed = jump_password.unwrap_or("".into());
+    let key_file = settings_store.get("keyFile");
+    let key_file_some = key_file.is_some();
+    let key_file_freed = key_file.unwrap_or("".into());
+    let key_passphrase = settings_store.get("keyPassphrase");
+    let key_passphrase_some = key_passphrase.is_some();
+    let key_passphrase_freed = key_passphrase.unwrap_or("".into());
+
+    let sshpass_plink = get_sshpass_plink(app.clone()).expect("idk where sshpass is so XP");
+    println!("{:?}", sshpass_plink);
     #[cfg(windows)]
     let child = Arc::new(tokio::sync::Mutex::new(
         Command::new("ssh")
             .arg(format!("{}@hackclub.app", username))
-            .arg(format_commands(&username, &commands))
+            .args(
+                (if key_file_some && key_file_freed.as_str().is_some() {
+                    vec!["-i", key_file_freed.as_str().unwrap()]
+                } else {
+                    vec![""]
+                })
+                .into_iter()
+                .chain(
+                    if jump_server_some && jump_server_freed.as_str().is_some() {
+                        vec!["-J", jump_server_freed.as_str().unwrap()]
+                    } else {
+                        vec![""]
+                    },
+                )
+                .chain(if switches_some && switches_freed.as_str().is_some() {
+                    switches_freed
+                        .as_str()
+                        .unwrap()
+                        .split(" ")
+                        .collect::<Vec<&str>>()
+                } else {
+                    vec![""]
+                })
+                .collect::<Vec<&str>>(),
+            )
+            .arg(format_commands(&username.to_string(), &commands))
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .creation_flags(CREATE_NO_WINDOW)
@@ -126,16 +250,62 @@ pub async fn run_ssh_flow(
             .spawn()
             .expect("Unable to spawn SSH"),
     ));
-    #[cfg(unix)]
+
+    #[cfg(target_os = "macos")]
     let child = Arc::new(tokio::sync::Mutex::new(
-        Command::new("ssh")
-            .arg(format!("{}@hackclub.app", username))
-            .arg(format_commands(&username, &commands))
+        // Command::new(sshpass_plink.as_os_str())
+        //     .args(
+        //         if key_passphrase_some && key_passphrase_freed.as_str().is_some() {
+        //             vec!["-p", key_passphrase_freed.as_str().unwrap()]
+        //         } else {
+        //             vec![]
+        //         },
+        //     )
+        //     .arg("ssh")
+        //     .arg(format!("{}@hackclub.app", username))
+        //     .args(
+        //         (if key_file_some && key_file_freed.as_str().is_some() {
+        //             vec!["-i", key_file_freed.as_str().unwrap()]
+        //         } else {
+        //             vec![]
+        //         })
+        //         .into_iter()
+        //         .chain(
+        //             if jump_server_some && jump_server_freed.as_str().is_some() {
+        //                 vec!["-J", jump_server_freed.as_str().unwrap()]
+        //             } else {
+        //                 vec![]
+        //             },
+        //         )
+        //         .chain(if switches_some && switches_freed.as_str().is_some() {
+        //             switches_freed
+        //                 .as_str()
+        //                 .unwrap()
+        //                 .split(" ")
+        //                 .collect::<Vec<&str>>()
+        //         } else {
+        //             vec![]
+        //         })
+        //         .collect::<Vec<&str>>(),
+        //     )
+        //     .arg(format_commands(&username.to_string(), &commands))
+        {
+            command!(
+                sshpass_plink.clone(),
+                username,
+                key_passphrase_freed,
+                jump_server_freed,
+                jump_password_freed,
+                key_file_freed,
+                switches_freed,
+                format_commands(&username.to_string(), &commands)
+            )
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn()
-            .expect("Unable to spawn SSH"),
+            .expect("Unable to spawn SSH")
+        },
     ));
     let pid = {
         let child_lock = child.lock().await;
@@ -145,8 +315,8 @@ pub async fn run_ssh_flow(
     let mut child_lock = child.lock().await;
     on_event
         .send(ProcessEvent::Started {
-            command: format_commands(&username, &commands),
-            process_id: child_lock.id().expect("Unable to get process ID"),
+            command: format_commands(&username.to_string(), &commands),
+            process_id: pid,
         })
         .unwrap();
     let stdout: ChildStdout = child_lock
@@ -162,6 +332,29 @@ pub async fn run_ssh_flow(
         .take()
         .expect("Was unable to get input from SSH");
     drop(child_lock); // release lock
+
+    let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
+
+    // if jump_password_some && jump_password_freed.as_str().is_some() {
+    //     sleep(Duration::from_millis(3000)).await;
+    //     let stdin_clone = stdin.clone();
+    //     stdin_clone
+    //         .lock()
+    //         .await
+    //         .write_all((jump_password_freed.as_str().unwrap().to_owned() + "\n").as_bytes())
+    //         .await
+    //         .expect("Could not authenticate to jump server");
+    // }
+    // if key_passphrase_some && key_passphrase_freed.as_str().is_some() {
+    //     sleep(Duration::from_millis(3000)).await;
+    //     let stdin_clone = stdin.clone();
+    //     stdin_clone
+    //         .lock()
+    //         .await
+    //         .write_all((key_passphrase_freed.as_str().unwrap().to_owned() + "\n").as_bytes())
+    //         .await
+    //         .expect("Could not authenticate to jump server");
+    // }
 
     let on_event_stdout = on_event.clone();
     let on_event_stderr = on_event.clone();
@@ -180,7 +373,7 @@ pub async fn run_ssh_flow(
         {
             println!("{:?}", line);
             let mut current_stage = *current_stage_stdout.lock().await;
-            let parsed = parse_output(&username, &line, current_stage);
+            let parsed = parse_output(&username.to_string(), &line, current_stage);
             println!("Parsed: {:?}, Current Stage: {}", parsed, current_stage);
             if parsed.0 {
                 current_stage = parsed.1;
@@ -220,7 +413,6 @@ pub async fn run_ssh_flow(
     });
 
     let written_num_stdin_clone = written_num_stdin.clone();
-    let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
     let stdin_3 = stdin.clone();
     let app_handle_stdin_2 = app_handle_stdin.clone();
     let stdin_handler = tokio::spawn(async move {
@@ -263,6 +455,7 @@ pub async fn run_ssh_flow(
                 .write_all(b"fail\n")
                 .await
                 .expect("Failed to write to stdin");
+            kill_process_by_pid(pid);
             app_handle_stdin_5.unlisten(event_id);
         });
     });
@@ -322,12 +515,17 @@ pub(crate) struct CommandOutput {
 #[tauri::command]
 pub async fn run_ssh_command(
     app: AppHandle,
-    username: String,
     command: String,
 ) -> Result<CommandOutput, CommandOutput> {
+    let store = app
+        .store("sshsettings.json")
+        .expect("Unable to access store");
     #[cfg(windows)]
     let child = Command::new("ssh")
-        .arg(format!("{}@hackclub.app", username))
+        .arg(format!(
+            "{}@hackclub.app",
+            store.get("username").expect("Unable to access store")
+        ))
         .arg(command)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -341,7 +539,10 @@ pub async fn run_ssh_command(
         })?;
     #[cfg(unix)]
     let child = Command::new("ssh")
-        .arg(format!("{}@hackclub.app", username))
+        .arg(format!(
+            "{}@hackclub.app",
+            store.get("username").expect("Unable to access store")
+        ))
         .arg(command)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -352,7 +553,6 @@ pub async fn run_ssh_command(
             stdout: "".parse().unwrap(),
             stderr: e.to_string(),
         })?;
-
 
     let pid = child.id().expect("Failed to get process ID");
     let app1 = app.clone();
@@ -404,19 +604,23 @@ pub async fn run_ssh_command_with_stream(
 ) -> Result<(), String> {
     #[cfg(windows)]
     let mut child = Command::new("ssh")
-        .arg(format!("{}@hackclub.app", username)).arg(command.clone())
+        .arg(format!("{}@hackclub.app", username))
+        .arg(command.clone())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
         .creation_flags(CREATE_NO_WINDOW)
-        .spawn().map_err(|e| e.to_string())?;
+        .spawn()
+        .map_err(|e| e.to_string())?;
     #[cfg(unix)]
     let mut child = Command::new("ssh")
-        .arg(format!("{}@hackclub.app", username)).arg(command.clone())
+        .arg(format!("{}@hackclub.app", username))
+        .arg(command.clone())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
-        .spawn().map_err(|e| e.to_string())?;
+        .spawn()
+        .map_err(|e| e.to_string())?;
 
     let pid = child.id().expect("Failed to get process ID");
     let app1 = app.clone();
@@ -511,7 +715,7 @@ pub async fn ssh_edit_file(
     app: AppHandle,
     username: String,
     remote_path: String,
-    new_content: Box<[u8]>
+    new_content: Box<[u8]>,
 ) -> Result<(), String> {
     #[cfg(windows)]
     let mut ssh = Command::new("ssh")
@@ -519,15 +723,20 @@ pub async fn ssh_edit_file(
         .arg(format!("dd of={}", remote_path))
         .stdin(std::process::Stdio::piped())
         .creation_flags(CREATE_NO_WINDOW)
-        .spawn().expect("Unable to spawn SSH");
+        .spawn()
+        .expect("Unable to spawn SSH");
     #[cfg(unix)]
     let mut ssh = Command::new("ssh")
         .arg(format!("{}@hackclub.app", username))
         .arg(format!("dd of={}", remote_path))
         .stdin(std::process::Stdio::piped())
-        .spawn().expect("Unable to spawn SSH");
+        .spawn()
+        .expect("Unable to spawn SSH");
     let mut stdin = ssh.stdin.take().expect("Failed to open stdin");
-    stdin.write_all(&new_content).await.expect("Failed to write to stdin");
+    stdin
+        .write_all(&new_content)
+        .await
+        .expect("Failed to write to stdin");
     drop(stdin); // Close stdin to signal EOF
     let output = ssh.wait_with_output().await.expect("Failed to wait on SSH");
     if !output.status.success() {

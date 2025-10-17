@@ -9,11 +9,10 @@ type CommandResult = {
     exitCode: number
 }
 
-// One-shot command.
+// One-shot command. Use streamed command for best results.
 export function Command(command: string): NHPromise<CommandResult> {
     try {
         let promise: NHPromise<CommandResult> = invoke("run_ssh_command", {
-            username: auth.value.username,
             command
         });
         promise.cancel = () => {

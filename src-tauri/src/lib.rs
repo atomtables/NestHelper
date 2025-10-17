@@ -1,6 +1,7 @@
 mod commands;
 mod kill_pid;
 mod fetch;
+mod sshasset;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

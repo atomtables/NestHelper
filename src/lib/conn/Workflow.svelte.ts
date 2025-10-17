@@ -1,7 +1,7 @@
-import {Channel, invoke} from "@tauri-apps/api/core";
-import {auth} from "$lib/state/states.svelte.js";
-import {emit} from "@tauri-apps/api/event";
-import {LocalFetch} from "$lib/helpers/LocalFetch.js";
+import { Channel, invoke } from "@tauri-apps/api/core";
+import { auth } from "$lib/state/states.svelte.js";
+import { emit } from "@tauri-apps/api/event";
+import { LocalFetch } from "$lib/helpers/LocalFetch.js";
 
 export type ProcessEvent = | {
     event: "started",
@@ -44,7 +44,7 @@ export type Task = {
     cwd?: string,
     frontend?: boolean,
     promise?: (
-        outputs: {stdout: string, stderr: string}[],
+        outputs: { stdout: string, stderr: string }[],
         log: (str: string) => void,
         logError: (str: string) => void,
         fetchNoCors: typeof LocalFetch,
@@ -73,7 +73,7 @@ export default class Workflow {
     public finishedAt: Date = $state();
     public name: string = $state()
 
-    private promise: NHPromise<void>;
+    public promise: NHPromise<void>;
     private currentTask: number = $state(0);
     public task: Task = $derived(this.tasks?.[this.currentTask] || null)
 
@@ -170,7 +170,6 @@ export default class Workflow {
         };
 
         this.promise = invoke("run_ssh_flow", {
-            username: auth.value.username,
             commands: this.tasks.map(t => ({
                 command: t.command,
                 frontend: t.frontend || false,

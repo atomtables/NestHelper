@@ -60,7 +60,6 @@ export class StreamedCommandSvelte {
             }
         }
         this.promise = invoke("run_ssh_command_with_stream", {
-            username: auth.value.username,
             command: this.command,
             onEvent: this.channel
         })

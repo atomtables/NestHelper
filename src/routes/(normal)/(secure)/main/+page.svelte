@@ -24,7 +24,31 @@
     })
 </script>
 
-<div class="w-full h-full flex flex-col lg:p-5 xl:p-10 2xl:max-w-5/6 2xl:mx-auto 2xl:py-32 gap-5" transition:slide>
+<svelte:boundary>
+    {#snippet failed(error, reset)}
+        <div class="mt-(--top-bar) fixed backdrop-blur-md z-50 top-0 w-full h-full">
+            <div class="w-full h-full flex flex-row justify-center items-center space-x-2">
+                <Spinner />
+                {#if currentFlow.value?.failed}
+                    <div>
+                        Failed to run startup flow.
+                    </div>
+                    <Button onclick={() => (currentFlow.value = new Workflow(Flows.startup(), "Startup Data Pull"), currentFlow.value.start(), (currentFlow.value.promise.then(() => currentFlow.value.complete && reset())))}>Restart</Button>
+                {:else if currentFlow.value}
+                    <div>
+                        Loading {currentFlow.value.name}... {currentFlow.value.task}...
+                    </div>
+                {:else}
+                    <div>
+                        You need to run the startup flow before continuing.
+                    </div>
+                    <Button onclick={() => (currentFlow.value = new Workflow(Flows.startup(), "Startup Data Pull"), currentFlow.value.start(), (currentFlow.value.promise.then(() => currentFlow.value.complete && reset())))}>Load flow</Button>
+                {/if}
+            </div>
+        </div>
+    {/snippet}
+
+    <div class="w-full h-full flex flex-col lg:p-5 xl:p-10 2xl:max-w-5/6 2xl:mx-auto 2xl:py-32 gap-5" transition:slide>
     <div class="text-6xl font-sans">
         Welcome, <b>{auth.value?.username || "Unknown"}!</b>
     </div>
@@ -127,3 +151,4 @@
         </div>
     </div>
 </div>
+</svelte:boundary>

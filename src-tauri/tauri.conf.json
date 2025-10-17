@@ -19,7 +19,7 @@
         "fullscreen": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "trafficLightPosition": { "x": 15, "y": 20 }
+        "trafficLightPosition": { "x": 18, "y": 16.5 }
       }
     ],
     "security": {
@@ -35,6 +35,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources": [
+      "assets/"
     ]
   }
 }

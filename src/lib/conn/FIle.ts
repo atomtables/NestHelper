@@ -5,7 +5,6 @@ import {alert} from "$lib/components/generic/Dialog.svelte"
 export const EditFile = async (path: string, data: Uint8Array) => {
     try {
         await invoke("ssh_edit_file", {
-            username: auth.value.username,
             remotePath: path,
             newContent: Array.from(data)
         });

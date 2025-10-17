@@ -9,6 +9,7 @@
         className: containerClassName = '',
         value = $bindable(),
         action = () => null,
+        noautomodify = false,
         elements = [],
         ...prop
     } = $props();
@@ -32,7 +33,7 @@
         transform: none;
     }
 </style>
-<div class="relative py-2 input-container w-full {className}">
+<div class="relative py-2 -my-2 input-container w-full {className}">
     <label class="transition-all floating-label text-gray-400 {isFocused && 'text-purple-400'} {hasText && 'up'}"
            for={id}>
         {name}
@@ -43,6 +44,10 @@
                 class="w-full px-3 pt-5 pb-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-base focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all {className}"
                 onfocus={() => isFocused = true}
                 onblur={() => isFocused = false}
+                autocorrect={noautomodify ? "off" : ''} 
+                spellcheck={noautomodify ? "false" : ''} 
+                autocapitalize={noautomodify ? "off" : ''} 
+                autocomplete={noautomodify ? "off" : ''} 
                 {...prop}
         >
             <option></option>
@@ -57,6 +62,10 @@
                     type="checkbox"
                     bind:checked={value}
                     onclick={() => action?.()}
+                    autocorrect={noautomodify ? "off" : ''} 
+                    spellcheck={noautomodify ? "false" : ''} 
+                    autocapitalize={noautomodify ? "off" : ''} 
+                    autocomplete={noautomodify ? "off" : ''} 
                     class="peer opacity-0 p-1 absolute z-10 cursor-pointer"
                     {...prop}
             />
@@ -88,6 +97,10 @@
                 onfocus={() => isFocused = true}
                 onblur={() => (isFocused = false)}
                 oninput={() => action?.()}
+                autocorrect={noautomodify ? "off" : ''} 
+                spellcheck={noautomodify ? "false" : ''} 
+                autocapitalize={noautomodify ? "off" : ''} 
+                autocomplete={noautomodify ? "off" : ''} 
                 {...prop}
         />
     {/if}

@@ -11,12 +11,13 @@
     import {goto} from "$app/navigation";
     import Workflow from "$lib/conn/Workflow.svelte";
     import Flows from "$lib/conn/Flows";
+    import SSHConfigurator from "$lib/components/SSHConfigurator.svelte";
 
     let showChildren = $state(false);
     let screen = $state(0);
 
     let username = $state("");
-    let servername = $state("");
+    let servername = $state("hackclub.app");
     let disclaimer = $state(false);
 
     function scaleCircle(node, { delay = 0, duration = 700, easing = quintOut } = {}) {
@@ -44,7 +45,7 @@
     };
 
     let handler = async () => {
-        if (screen === 2) {
+        if (screen === 3) {
             await tick();
             if (!username || !disclaimer) {
                 return;
@@ -100,10 +101,10 @@
                         </ul>
                     </div>
                     <div class="flex flex-row justify-center items-center gap-2">
-                        <Input bind:value={username} name="Username" id="username" type="text"
+                        <Input bind:value={username} name="Username" id="username" type="text" noautomodify
                                className="w-full max-w-md" />
                         <div>@</div>
-                        <Input bind:value={username} name="server" id="server" type="text"
+                        <Input bind:value={servername} name="server" id="server" type="text" noautomodify
                                className="w-full max-w-md" />
                     </div>
                     <div class="flex flex-row justify-center items-center gap-2">
@@ -117,6 +118,12 @@
                     </div>
                 </div>
             {:else if screen === 2}
+                <div class='flex flex-col gap-2 w-full' transition:slide>
+                    <div class='text-2xl font-bold'>
+                        Configure SSH settings
+                    </div>
+                    <SSHConfigurator />
+                </div>
             {:else if screen === 3}
                 <div transition:slide class="w-full">
                     <Flow />

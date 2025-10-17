@@ -63,11 +63,9 @@
         return value;
     }
 
-    export const confirm = async (title, description, children, isSnippet, manualclose) => {
+    export const confirm = async (title, description = '', children = null, isSnippet = true): Promise<boolean> => {
         let state;
-        const result = new Promise(resolve => state = resolve);
-        let close;
-        const manual = new Promise(resolve => close = resolve);
+        const result: Promise<boolean> = new Promise(resolve => state = resolve);
 
         let element = document.createElement("div");
         document.body.appendChild(element);
@@ -80,14 +78,12 @@
                 name: "Cancel",
                 action: async () => {
                     state(false)
-                    if (manualclose) await never(manual);
                 },
                 close: true
             }, {
                 name: "Yes",
                 action: async () => {
                     state(true)
-                    if (manualclose) await never(manual);
                 },
                 primary: true,
                 close: true
@@ -105,23 +101,11 @@
         props.open = true
 
         let value = await result;
-        if (manualclose) {
-            manual.then(() => {
-                props.open = false;
-                setTimeout(async () => {
-                    await unmount(dialog);
-                    element.remove();
-                }, 400)
-            })
-            value = [value, close]
-        } else {
-            props.open = false;
-            setTimeout(async () => {
-                await unmount(dialog);
-                element.remove();
-            }, 400)
-            value = [value]
-        }
+        props.open = false;
+        setTimeout(async () => {
+            await unmount(dialog);
+            element.remove();
+        }, 400)
         return value;
     }
 

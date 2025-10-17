@@ -1,5 +1,5 @@
 <script>
-    let {size = 40, strokeWidth = 4, type = "primary", class: className} = $props();
+    let {size = 40, strokeWidth = 4, type = "primary", class: className = ''} = $props();
 </script>
 
 <style>

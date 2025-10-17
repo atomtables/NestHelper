@@ -1,9 +1,9 @@
-<script>
+<script lang="ts">
 	import favicon from '$lib/assets/favicon.png';
 	import flow from '$lib/assets/flow.png';
 	import files from '$lib/assets/files.png';
 	import save from '$lib/assets/save.png';
-	import {app, auth, currentFlow, filesystem} from '$lib/state/states.svelte.ts';
+	import {app, auth, currentFlow, filesystem, saveAll} from '$lib/state/states.svelte';
 	import { page } from "$app/state";
 	import image from "$lib/assets/favicon.png";
 	import Spinner from "$lib/components/generic/Spinner.svelte";
@@ -13,11 +13,11 @@
 	import {quintIn} from "svelte/easing";
 	import {onMount} from "svelte";
 	import {goto} from "$app/navigation";
-	import {confirm} from "$lib/components/generic/Dialog.svelte";
+	import {alert, confirm} from "$lib/components/generic/Dialog.svelte";
 	import {getCurrentWindow} from "@tauri-apps/api/window";
 	import Input from "$lib/components/generic/Input.svelte";
-	import Workflow from "$lib/conn/Workflow.svelte.ts";
-	import Flows from "$lib/conn/Flows.ts";
+	import Workflow from "$lib/conn/Workflow.svelte";
+	import Flows from "$lib/conn/Flows";
 	import command from "$lib/assets/command.png";
 	import flows from "$lib/assets/flows.png";
 
@@ -41,7 +41,7 @@
 		globalThis.filesModified = filesModified;
 		globalThis.filesystem = filesystem
 
-		let [result] = await confirm(
+		let result = await confirm(
 				"Are you sure you would like to save all files?",
 				`You will be saving all files that you have modified. This includes the following files: <br> ${filesModified.map(f => `<b>${f}</b>`).join("<br>")} <br> Would you like to continue?`,
 				saveFilesBackupConfirmation,
@@ -80,7 +80,7 @@
 
 	onMount(() => {
 		getCurrentWindow().onCloseRequested(async (e) => {
-			const [confirmed] = await confirm('Are you sure you want to close the app?', 'You may have unsaved changes that will be lost if you close the app.');
+			const confirmed = await confirm('Are you sure you want to close the app?', 'You may have unsaved changes that will be lost if you close the app.');
 			if (!confirmed) {
 				e.preventDefault();
 			} else {
@@ -96,7 +96,7 @@
 
 {#snippet saveFilesBackupConfirmation()}
 	<div class="flex flex-row items-center gap-2">
-		<Input type="checkbox" bind:value={saveBackup} class="w-min" />
+		<Input name='' type="checkbox" bind:value={saveBackup} class="w-min" />
 		<div class="text-sm">
 			Save a backup of all files beforehand.
 		</div>
@@ -185,7 +185,7 @@
 							</div>
 						{:else}
 							<div class="absolute top-0 left-0 right-0 bottom-0 w-8 h-8 flex items-center justify-center">
-								<Spinner size="24" type="secondary" />
+								<Spinner size={24} type="secondary" />
 							</div>
 						{/if}
 					</Button>
@@ -211,7 +211,7 @@
 					{/if}
 				</div>
 			{/if}
-			{#if filesystem.value.filesWereModified}
+			{#if filesystem.value?.filesWereModified}
 				<div class="border-b-2 border-amber-500" transition:scale>
 					<Button disableLoading transparent class="[&]:p-1 w-8 h-8 rounded-none group relative" onclick={saveFiles}>
 						<img src={save} alt="Flow" class="h-6" />
@@ -221,7 +221,9 @@
 					</Button>
 				</div>
 			{/if}
-			<div class="mr-2 select-none text-sm">{auth.value.username}@hackclub.app</div>
+			<Dropdown items={[
+				'Log out'
+			]} onselect={v => v === 0 && (auth.value.username = null, saveAll(), goto('/'))} class="mr-2 select-none text-sm bg-black/0! hover:bg-neutral-700! px-1! rounded-none! py-0!">{auth.value.username}@hackclub.app</Dropdown>
 		</div>
 	{/if}
 </div>
