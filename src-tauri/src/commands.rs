@@ -18,6 +18,7 @@ use tokio::{
 #[cfg(target_os = "windows")]
 use winapi::um::winbase::CREATE_NO_WINDOW;
 
+#[cfg(unix)]
 #[macro_export]
 macro_rules! command {
     ($sshpass_plink:expr, $username:expr, $key_passphrase:expr, $jump_server:expr, $jump_password:expr, $key_file:expr, $switches:expr, $commands:expr) => {{
@@ -75,6 +76,76 @@ macro_rules! command {
         command
     }};
 }
+
+#[cfg(windows)]
+#[macro_export]
+// used gpt for this because windows can suck it
+macro_rules! command {
+    (
+        $plink_path:expr,
+        $username:expr,
+        $key_passphrase:expr,
+        $jump_server:expr,
+        $jump_password:expr,
+        $key_file:expr,
+        $switches:expr,
+        $commands:expr
+    ) => {{
+        use std::process::Command;
+
+        let plink_cloned = $plink_path.clone();
+        let mut command = Command::new(&plink_cloned);
+
+        let mut args: Vec<String> = Vec::new();
+
+        // Handle jump server via -proxycmd using plink -nc
+        if let Some(ref jump_host) = $jump_server.as_ref() {
+            let mut proxy_cmd = format!("{} ", plink_cloned);
+
+            // Jump password (optional)
+            if let Some(ref jump_pw) = $jump_password.as_ref() {
+                proxy_cmd.push_str(&format!("-pw {} ", jump_pw));
+            }
+
+            // Netcat-like forwarding to target
+            proxy_cmd.push_str(&format!(
+                "{}@{} -nc hackclub.app:22",
+                $username,
+                jump_host
+            ));
+
+            args.push("-proxycmd".to_string());
+            args.push(proxy_cmd);
+        }
+
+        // Add key file if provided
+        if let Some(ref keyfile) = $key_file.as_ref() {
+            args.push("-i".to_string());
+            args.push(keyfile.clone());
+        }
+
+        // Add password/passphrase if provided
+        if let Some(ref passphrase) = $key_passphrase.as_ref() {
+            args.push("-pw".to_string());
+            args.push(passphrase.clone());
+        }
+
+        // Add additional switches
+        if let Some(ref sw) = $switches.as_ref() {
+            args.extend(sw.split_whitespace().map(|s| s.to_string()));
+        }
+
+        // Final destination
+        args.push(format!("{}@hackclub.app", $username));
+
+        // Final remote command
+        args.push($commands.to_string());
+
+        command.args(&args);
+        command
+    }};
+}
+
 
 // this is all for running an SSH flow.
 #[derive(Clone, Serialize)]
@@ -195,109 +266,44 @@ pub async fn run_ssh_flow(
     let settings_store = app
         .store("sshsettings.json")
         .expect("Unable to access store");
-    let switches = settings_store.get("switches");
-    let switches_some = switches.is_some();
-    let switches_freed = switches.unwrap_or("".into());
-    let jump_server = settings_store.get("jumpServer");
-    let jump_server_some = jump_server.is_some();
-    let jump_server_freed = jump_server.unwrap_or("".into());
-    let jump_password = settings_store.get("jumpPassword");
-    let jump_password_some = jump_password.is_some();
-    let jump_password_freed = jump_password.unwrap_or("".into());
-    let key_file = settings_store.get("keyFile");
-    let key_file_some = key_file.is_some();
-    let key_file_freed = key_file.unwrap_or("".into());
-    let key_passphrase = settings_store.get("keyPassphrase");
-    let key_passphrase_some = key_passphrase.is_some();
-    let key_passphrase_freed = key_passphrase.unwrap_or("".into());
+    let switches = settings_store.get("switches").unwrap_or(0.into());
+    let jump_server = settings_store.get("jumpServer").unwrap_or(0.into());
+    let jump_password = settings_store.get("jumpPassword").unwrap_or(0.into());
+    let key_file = settings_store.get("keyFile").unwrap_or(0.into());
+    let key_passphrase = settings_store.get("keyPassphrase").unwrap_or(0.into());
 
     let sshpass_plink = get_sshpass_plink(app.clone()).expect("idk where sshpass is so XP");
-    println!("{:?}", sshpass_plink);
     #[cfg(windows)]
     let child = Arc::new(tokio::sync::Mutex::new(
-        Command::new("ssh")
-            .arg(format!("{}@hackclub.app", username))
-            .args(
-                (if key_file_some && key_file_freed.as_str().is_some() {
-                    vec!["-i", key_file_freed.as_str().unwrap()]
-                } else {
-                    vec![""]
-                })
-                .into_iter()
-                .chain(
-                    if jump_server_some && jump_server_freed.as_str().is_some() {
-                        vec!["-J", jump_server_freed.as_str().unwrap()]
-                    } else {
-                        vec![""]
-                    },
-                )
-                .chain(if switches_some && switches_freed.as_str().is_some() {
-                    switches_freed
-                        .as_str()
-                        .unwrap()
-                        .split(" ")
-                        .collect::<Vec<&str>>()
-                } else {
-                    vec![""]
-                })
-                .collect::<Vec<&str>>(),
-            )
-            .arg(format_commands(&username.to_string(), &commands))
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::piped())
-            .creation_flags(CREATE_NO_WINDOW)
-            .stderr(std::process::Stdio::piped())
-            .spawn()
-            .expect("Unable to spawn SSH"),
+        command!(
+            sshpass_plink.clone(),
+            username,
+            key_passphrase,
+            jump_server,
+            jump_password,
+            key_file,
+            switches,
+            format_commands(&username.to_string(), &commands)
+        )
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .creation_flags(CREATE_NO_WINDOW)
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("Unable to spawn SSH")
     ));
 
-    #[cfg(target_os = "macos")]
+    #[cfg(unix)]
     let child = Arc::new(tokio::sync::Mutex::new(
-        // Command::new(sshpass_plink.as_os_str())
-        //     .args(
-        //         if key_passphrase_some && key_passphrase_freed.as_str().is_some() {
-        //             vec!["-p", key_passphrase_freed.as_str().unwrap()]
-        //         } else {
-        //             vec![]
-        //         },
-        //     )
-        //     .arg("ssh")
-        //     .arg(format!("{}@hackclub.app", username))
-        //     .args(
-        //         (if key_file_some && key_file_freed.as_str().is_some() {
-        //             vec!["-i", key_file_freed.as_str().unwrap()]
-        //         } else {
-        //             vec![]
-        //         })
-        //         .into_iter()
-        //         .chain(
-        //             if jump_server_some && jump_server_freed.as_str().is_some() {
-        //                 vec!["-J", jump_server_freed.as_str().unwrap()]
-        //             } else {
-        //                 vec![]
-        //             },
-        //         )
-        //         .chain(if switches_some && switches_freed.as_str().is_some() {
-        //             switches_freed
-        //                 .as_str()
-        //                 .unwrap()
-        //                 .split(" ")
-        //                 .collect::<Vec<&str>>()
-        //         } else {
-        //             vec![]
-        //         })
-        //         .collect::<Vec<&str>>(),
-        //     )
-        //     .arg(format_commands(&username.to_string(), &commands))
         {
             command!(
                 sshpass_plink.clone(),
                 username,
-                key_passphrase_freed,
-                jump_server_freed,
-                jump_password_freed,
-                key_file_freed,
-                switches_freed,
+                key_passphrase,
+                jump_server,
+                jump_password,
+                key_file,
+                switches,
                 format_commands(&username.to_string(), &commands)
             )
             .stdin(std::process::Stdio::piped())
@@ -334,8 +340,6 @@ pub async fn run_ssh_flow(
     drop(child_lock); // release lock
 
     let stdin = Arc::new(tokio::sync::Mutex::new(stdin));
-
-    // if jump_password_some && jump_password_freed.as_str().is_some() {
     //     sleep(Duration::from_millis(3000)).await;
     //     let stdin_clone = stdin.clone();
     //     stdin_clone
@@ -517,16 +521,26 @@ pub async fn run_ssh_command(
     app: AppHandle,
     command: String,
 ) -> Result<CommandOutput, CommandOutput> {
-    let store = app
+    let settings_store = app
         .store("sshsettings.json")
         .expect("Unable to access store");
+    let switches = settings_store.get("switches").unwrap_or(0.into());
+    let jump_server = settings_store.get("jumpServer").unwrap_or(0.into());
+    let jump_password = settings_store.get("jumpPassword").unwrap_or(0.into());
+    let key_file = settings_store.get("keyFile").unwrap_or(0.into());
+    let key_passphrase = settings_store.get("keyPassphrase").unwrap_or(0.into());
+    let sshpass_plink = get_sshpass_plink(app.clone()).expect("idk where sshpass is so XP");
     #[cfg(windows)]
-    let child = Command::new("ssh")
-        .arg(format!(
-            "{}@hackclub.app",
-            store.get("username").expect("Unable to access store")
-        ))
-        .arg(command)
+    let child = command!(
+            sshpass_plink.clone(),
+            username,
+            key_passphrase,
+            jump_server,
+            jump_password,
+            key_file,
+            switches,
+            command
+        )
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::null())
@@ -538,12 +552,16 @@ pub async fn run_ssh_command(
             stderr: e.to_string(),
         })?;
     #[cfg(unix)]
-    let child = Command::new("ssh")
-        .arg(format!(
-            "{}@hackclub.app",
-            store.get("username").expect("Unable to access store")
-        ))
-        .arg(command)
+    let child = command!(
+            sshpass_plink.clone(),
+            username,
+            key_passphrase,
+            jump_server,
+            jump_password,
+            key_file,
+            switches,
+            command
+        )
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::null())
@@ -602,10 +620,26 @@ pub async fn run_ssh_command_with_stream(
     command: String,
     on_event: Channel<ProcessEvent>,
 ) -> Result<(), String> {
+    let settings_store = app
+        .store("sshsettings.json")
+        .expect("Unable to access store");
+    let switches = settings_store.get("switches").unwrap_or(0.into());
+    let jump_server = settings_store.get("jumpServer").unwrap_or(0.into());
+    let jump_password = settings_store.get("jumpPassword").unwrap_or(0.into());
+    let key_file = settings_store.get("keyFile").unwrap_or(0.into());
+    let key_passphrase = settings_store.get("keyPassphrase").unwrap_or(0.into());
+    let sshpass_plink = get_sshpass_plink(app.clone()).expect("idk where sshpass is so XP");
     #[cfg(windows)]
-    let mut child = Command::new("ssh")
-        .arg(format!("{}@hackclub.app", username))
-        .arg(command.clone())
+    let mut child = command!(
+            sshpass_plink.clone(),
+            username,
+            key_passphrase,
+            jump_server,
+            jump_password,
+            key_file,
+            switches,
+            command.clone()
+        )
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
@@ -613,9 +647,16 @@ pub async fn run_ssh_command_with_stream(
         .spawn()
         .map_err(|e| e.to_string())?;
     #[cfg(unix)]
-    let mut child = Command::new("ssh")
-        .arg(format!("{}@hackclub.app", username))
-        .arg(command.clone())
+    let mut child = command!(
+            sshpass_plink.clone(),
+            username,
+            key_passphrase,
+            jump_server,
+            jump_password,
+            key_file,
+            switches,
+            command.clone()
+        )
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
@@ -717,18 +758,41 @@ pub async fn ssh_edit_file(
     remote_path: String,
     new_content: Box<[u8]>,
 ) -> Result<(), String> {
+    let settings_store = app
+        .store("sshsettings.json")
+        .expect("Unable to access store");
+    let switches = settings_store.get("switches").unwrap_or(0.into());
+    let jump_server = settings_store.get("jumpServer").unwrap_or(0.into());
+    let jump_password = settings_store.get("jumpPassword").unwrap_or(0.into());
+    let key_file = settings_store.get("keyFile").unwrap_or(0.into());
+    let key_passphrase = settings_store.get("keyPassphrase").unwrap_or(0.into());
+    let sshpass_plink = get_sshpass_plink(app.clone()).expect("idk where sshpass is so XP");
     #[cfg(windows)]
-    let mut ssh = Command::new("ssh")
-        .arg(format!("{}@hackclub.app", username))
-        .arg(format!("dd of={}", remote_path))
+    let mut ssh = command!(
+            sshpass_plink.clone(),
+            username,
+            key_passphrase,
+            jump_server,
+            jump_password,
+            key_file,
+            switches,
+            format!("dd of={}", remote_path)
+        )
         .stdin(std::process::Stdio::piped())
         .creation_flags(CREATE_NO_WINDOW)
         .spawn()
         .expect("Unable to spawn SSH");
     #[cfg(unix)]
-    let mut ssh = Command::new("ssh")
-        .arg(format!("{}@hackclub.app", username))
-        .arg(format!("dd of={}", remote_path))
+    let mut ssh = command!(
+            sshpass_plink.clone(),
+            username,
+            key_passphrase,
+            jump_server,
+            jump_password,
+            key_file,
+            switches,
+            format!("dd of={}", remote_path)
+        )
         .stdin(std::process::Stdio::piped())
         .spawn()
         .expect("Unable to spawn SSH");
