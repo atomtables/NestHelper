@@ -1,13 +1,13 @@
 <script lang="ts">
-import Flow from "$lib/components/Flow.svelte";
-import {slide} from "svelte/transition";
-import {onMount} from "svelte";
-import {app, currentFlow} from "$lib/state/states.svelte.js";
-import Button from "$lib/components/generic/Button.svelte";
+    import Flow from '$lib/components/Flow.svelte';
+    import { slide } from 'svelte/transition';
+    import { onMount } from 'svelte';
+    import { app, currentFlow } from '$lib/state/states.svelte.js';
+    import Button from '$lib/components/generic/Button.svelte';
 
-onMount(() => {
-    app.value.status = ""
-})
+    onMount(() => {
+        app.value.status = '';
+    });
 </script>
 
 <div class="w-full min-h-full flex flex-col p-10 bg-purple-900" transition:slide>
@@ -17,7 +17,9 @@ onMount(() => {
         </div>
         <div class="rounded-2xl bg-neutral-900 p-5 flex flex-col gap-2">
             <div>
-                Status: <b>{currentFlow.value.complete ? 'Completed' : currentFlow.value.failed ? 'Failed' : currentFlow.value.started ? 'Ongoing' : 'Pending'}</b>
+                Status: <b
+                    >{currentFlow.value.complete ? 'Completed' : currentFlow.value.failed ? 'Failed' : currentFlow.value.started ? 'Ongoing' : 'Pending'}</b
+                >
             </div>
             <div>
                 Started: <b>{new Date(currentFlow.value.startedAt).toLocaleTimeString()}</b>

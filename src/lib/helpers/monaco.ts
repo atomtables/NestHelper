@@ -33,7 +33,7 @@ self.MonacoEnvironment = {
             default:
                 return new editorWorker();
         }
-    }
+    },
 };
 
 const caddyfileLanguage = {
@@ -63,12 +63,10 @@ const caddyfileLanguage = {
         'expression',
         'basicauth',
         'root',
-        'bind'
+        'bind',
     ],
 
-    brackets: [
-        { open: '{', close: '}', token: 'delimiter.curly' },
-    ],
+    brackets: [{ open: '{', close: '}', token: 'delimiter.curly' }],
 
     tokenizer: {
         root: [
@@ -95,7 +93,7 @@ const caddyfileLanguage = {
 
             // Hostnames and paths
             [/\/[^\s{}"]*/, 'string.path'],
-            [/[^\s{}"]+/, ''] // identifiers or literals
+            [/[^\s{}"]+/, ''], // identifiers or literals
         ],
 
         block: [
@@ -110,44 +108,97 @@ const caddyfileLanguage = {
             ],
             [/:?\d+/, 'number'],
             [/\/[^\s{}"]*/, 'string.path'],
-            [/[^\s{}"]+/, '']
+            [/[^\s{}"]+/, ''],
         ],
 
         string: [
             [/[^\\"]+/, 'string'],
             [/\\./, 'string.escape'],
-            [/"/, { token: 'string.quote', next: '@pop' }]
-        ]
-    }
+            [/"/, { token: 'string.quote', next: '@pop' }],
+        ],
+    },
 };
 
-monaco.languages.register({ id: 'caddyfile', extensions: [".caddyfile"], aliases: ["Caddyfile"] });
+monaco.languages.register({
+    id: 'caddyfile',
+    extensions: ['.caddyfile'],
+    aliases: ['Caddyfile'],
+});
 // @ts-ignore
 monaco.languages.setMonarchTokensProvider('caddyfile', caddyfileLanguage);
 
 export const supportedLanguages = () => {
-    return monaco.languages.getLanguages().map(v => v.id)
-}
+    return monaco.languages.getLanguages().map((v) => v.id);
+};
 export const highlighting = (filename: string) => {
-    let languages = monaco.languages.getLanguages()
+    let languages = monaco.languages.getLanguages();
     for (let lang of languages) {
-        if (lang.extensions && lang.extensions.some(ext => filename.endsWith(ext))) {
+        if (lang.extensions && lang.extensions.some((ext) => filename.endsWith(ext))) {
             return lang.id;
         }
-        if (lang.aliases && lang.aliases.some(alias => filename.toLowerCase() === alias.toLowerCase())) {
+        if (lang.aliases && lang.aliases.some((alias) => filename.toLowerCase() === alias.toLowerCase())) {
             return lang.id;
         }
     }
     return 'plaintext';
-}
+};
 
 export const supportedBinary = (filename: string) => {
-    const binaryExtensions = ['.exe', '.dll', '.so', '.dylib', '.bin', '.dat', '.class', '.o', '.a', '.lib', '.img', '.iso', '.zip', '.tar', '.gz', '.7z', '.rar', '.mp3', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
-    return binaryExtensions.some(ext => filename.toLowerCase().endsWith(ext));
-}
+    const binaryExtensions = [
+        '.exe',
+        '.dll',
+        '.so',
+        '.dylib',
+        '.bin',
+        '.dat',
+        '.class',
+        '.o',
+        '.a',
+        '.lib',
+        '.img',
+        '.iso',
+        '.zip',
+        '.tar',
+        '.gz',
+        '.7z',
+        '.rar',
+        '.mp3',
+        '.mp4',
+        '.avi',
+        '.mov',
+        '.wmv',
+        '.flv',
+        '.mkv',
+        '.pdf',
+        '.doc',
+        '.docx',
+        '.xls',
+        '.xlsx',
+        '.ppt',
+        '.pptx',
+    ];
+    return binaryExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
 export const supportedImage = (filename: string) => {
-    const imageExtensions = ['.apng', '.png', '.avif', '.gif', '.jpg', '.jpeg', '.jfif', '.pjpeg', '.pjp', '.svg', '.webp', '.bmp', '.ico', '.cur', '.tif', '.tiff'];
-    return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
-}
+    const imageExtensions = [
+        '.apng',
+        '.png',
+        '.avif',
+        '.gif',
+        '.jpg',
+        '.jpeg',
+        '.jfif',
+        '.pjpeg',
+        '.pjp',
+        '.svg',
+        '.webp',
+        '.bmp',
+        '.ico',
+        '.cur',
+        '.tif',
+        '.tiff',
+    ];
+    return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
 
 export default monaco;

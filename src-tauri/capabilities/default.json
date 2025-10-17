@@ -1,23 +1,21 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "default",
-  "description": "enables the default permissions",
-  "windows": [
-    "main"
-  ],
-  "permissions": [
-    "core:default",
-    "core:window:default",
-    "core:window:allow-destroy",
-    "core:window:allow-close",
-    "core:window:allow-minimize",
-    "core:window:allow-start-dragging",
-    "core:window:allow-toggle-maximize",
-    "core:window:allow-internal-toggle-maximize",
-    "core:webview:allow-create-webview-window",
-    "store:default",
-    "fs:default",
-    "fs:write-files",
-    "dialog:default"
-  ]
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "default",
+    "description": "enables the default permissions",
+    "windows": ["main"],
+    "permissions": [
+        "core:default",
+        "core:window:default",
+        "core:window:allow-destroy",
+        "core:window:allow-close",
+        "core:window:allow-minimize",
+        "core:window:allow-start-dragging",
+        "core:window:allow-toggle-maximize",
+        "core:window:allow-internal-toggle-maximize",
+        "core:webview:allow-create-webview-window",
+        "store:default",
+        "fs:default",
+        "fs:write-files",
+        "dialog:default"
+    ]
 }

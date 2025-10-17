@@ -1,34 +1,26 @@
 <script>
-    import Input from "$lib/components/generic/Input.svelte";
-    import {slide} from "svelte/transition";
-    import Button from "$lib/components/generic/Button.svelte";
+    import Input from '$lib/components/generic/Input.svelte';
+    import { slide } from 'svelte/transition';
+    import Button from '$lib/components/generic/Button.svelte';
 
-    let {
-        source,
-        header,
-        template,
-        emptyStr,
-        actions,
-        checkable = true,
-        selected = $bindable([]),
-    } = $props();
+    let { source, header, template, emptyStr, actions, checkable = true, selected = $bindable([]) } = $props();
 
     let all = $state(false);
     const allActive = () => {
         selected.length = source.length;
         for (let i = 0; i < selected.length; i++) if (!selected[i]) return false;
         return true;
-    }
+    };
     const numberSelected = () => {
         let count = 0;
         for (let i = 0; i < selected.length; i++) if (selected[i]) count++;
-        return count
-    }
+        return count;
+    };
     const numbersActive = () => {
-        let arr = []
-        for (let i = 0; i < selected.length; i++) if (selected[i]) arr.push(i)
-        return arr
-    }
+        let arr = [];
+        for (let i = 0; i < selected.length; i++) if (selected[i]) arr.push(i);
+        return arr;
+    };
     const toggleAll = () => {
         selected.length = source.length;
         let n = source.length;
@@ -39,21 +31,18 @@
                 selected[i] = true;
             }
         }
-        if (!allToggled)
-            for (let i = 0; i < n; i++)
-                selected[i] = false;
+        if (!allToggled) for (let i = 0; i < n; i++) selected[i] = false;
         all = allActive();
-    }
-    const toggleOne = n => {
-        selected[n] = !selected[n]
+    };
+    const toggleOne = (n) => {
+        selected[n] = !selected[n];
         all = allActive();
-    }
+    };
     const removeAll = () => {
         selected.length = source.length;
-        for (let i = 0; i < selected.length; i++)
-            selected[i] = false;
+        for (let i = 0; i < selected.length; i++) selected[i] = false;
         all = allActive();
-    }
+    };
 </script>
 
 {#if numberSelected() > 0}
@@ -65,9 +54,8 @@
             <div class="font-bold pl-3">{numberSelected()} SELECTED</div>
         </div>
         <div class="flex flex-row px-1 space-x-2">
-            {#each actions as {name, icon, action}}
-                <Button disableLoading transparent class="[&]:p-1"
-                        onclick={async () => await action(numbersActive(), removeAll)}>
+            {#each actions as { name, icon, action }}
+                <Button disableLoading transparent class="[&]:p-1" onclick={async () => await action(numbersActive(), removeAll)}>
                     <span class="material-symbols-outlined">{icon}</span>
                 </Button>
             {/each}
@@ -76,27 +64,26 @@
 {/if}
 <table class="bg-green-900 w-full text-left">
     <thead>
-    <tr class="border-b-2 border-gray-400 text-gray-200 *:px-2">
-        {#if checkable}
-            <th class="w-8">
-                <Input type="checkbox" bind:value={all} action={() => toggleAll()}/>
-            </th>
-        {/if}
-        {@render header()}
-    </tr>
+        <tr class="border-b-2 border-gray-400 text-gray-200 *:px-2">
+            {#if checkable}
+                <th class="w-8">
+                    <Input type="checkbox" bind:value={all} action={() => toggleAll()} />
+                </th>
+            {/if}
+            {@render header()}
+        </tr>
     </thead>
     <tbody>
-    {#if source.length > 0}
-        {#each source as data, i}
-            <tr class="text-white *:px-2 hover:bg-neutral-500/40 transition-all">
-                {#if checkable}
-                    <th class="w-8 px-2"><Input type="checkbox" bind:value={selected[i]} action={() => toggleOne(i)}/>
-                    </th>
-                {/if}
-                {@render template(data, i)}
-            </tr>
-        {/each}
-    {/if}
+        {#if source.length > 0}
+            {#each source as data, i}
+                <tr class="text-white *:px-2 hover:bg-neutral-500/40 transition-all">
+                    {#if checkable}
+                        <th class="w-8 px-2"><Input type="checkbox" bind:value={selected[i]} action={() => toggleOne(i)} /> </th>
+                    {/if}
+                    {@render template(data, i)}
+                </tr>
+            {/each}
+        {/if}
     </tbody>
 </table>
 {#if source.length < 1}

@@ -35,9 +35,9 @@
                 monaco.editor.setModelLanguage(editor.getModel(), language);
             }
         } catch (e) {
-            console.error("Major ERROR: ", e)
+            console.error('Major ERROR: ', e);
         }
-    })
+    });
 
     $effect(() => {
         if (value) {
@@ -62,7 +62,7 @@
             monaco?.editor.getModels().forEach((model) => model.dispose());
             editor?.dispose();
         } catch {
-            console.error("failed to destroy")
+            console.error('failed to destroy');
         }
     });
 </script>
