@@ -29,13 +29,13 @@
             {/if}
         </div>
         <div class="p-2">
-            <div class="flex flex-row items-center justify-end">
+            <div class="flex flex-row items-center justify-end gap-2">
                 {#if currentFlow.value.failed}
-                    <Button destructive onclick={() => currentFlow.value.promise.cancel()}>Cancel Flow</Button>
-                    <Button onclick={async () => await currentFlow.value.start()}>Restart Flow</Button>
+                    <!-- <Button destructive onclick={() => currentFlow.value.promise.cancel()}>Cancel</Button> -->
+                    <Button onclick={async () => await currentFlow.value.start()}>Restart</Button>
                 {/if}
                 {#if !(currentFlow.value.complete || currentFlow.value.failed)}
-                    <Button destructive onclick={() => currentFlow.value.promise.cancel()}>Cancel Flow</Button>
+                    <Button destructive onclick={() => currentFlow.value.promise.cancel()}>Cancel</Button>
                 {/if}
             </div>
         </div>
