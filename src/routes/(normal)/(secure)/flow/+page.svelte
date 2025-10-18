@@ -32,7 +32,7 @@
             <div class="flex flex-row items-center justify-end">
                 {#if currentFlow.value.failed}
                     <Button destructive onclick={() => currentFlow.value.promise.cancel()}>Cancel Flow</Button>
-                    <Button onclick={() => currentFlow.value.start()}>Restart Flow</Button>
+                    <Button onclick={async () => await currentFlow.value.start()}>Restart Flow</Button>
                 {/if}
                 {#if !(currentFlow.value.complete || currentFlow.value.failed)}
                     <Button destructive onclick={() => currentFlow.value.promise.cancel()}>Cancel Flow</Button>

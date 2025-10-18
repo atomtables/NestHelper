@@ -12,7 +12,11 @@
     let switches = $state('');
     let keyPassphrase = $state('');
 
+    let mounted = $state(false)
+
     $effect(() => {
+        if (!mounted) return;
+
         try {
             if (keyFile === '') sshSettings.value.keyFile = null;
             else sshSettings.value.keyFile = keyFile;
@@ -54,9 +58,12 @@
             keyFile = sshSettings.value.keyFile;
             jumpServer = sshSettings.value.jumpServer;
             jumpPassword = sshSettings.value.jumpPassword;
+            if (keyFile) external_identity = true
+            if (jumpServer) jump_server_selected = true
             switches = sshSettings.value.switches;
             keyPassphrase = sshSettings.value.keyPassphrase;
         }
+        mounted = true;
     });
 </script>
 

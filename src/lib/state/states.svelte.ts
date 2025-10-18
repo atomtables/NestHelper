@@ -73,7 +73,7 @@ export let userflows = $state<State<FlowWrapper>>({
     value: { flows: [] },
 });
 
-type FileFolder =
+export type FileFolder =
     | {
           type: 'file';
           size: number;
@@ -86,6 +86,7 @@ type Filesystem = {
     files: { [name: string]: FileFolder };
     fileData: {
         [name: string]: {
+            // TYPE: 0 means text, 1 means image, 2 means binary
             type: 0 | 1 | 2;
             original: Uint8Array<ArrayBuffer>;
             modified: Uint8Array<ArrayBuffer>;

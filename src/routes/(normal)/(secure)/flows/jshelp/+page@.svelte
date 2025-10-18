@@ -25,12 +25,11 @@
     <br />
     <div class="text-xl font-bold">Outputting from a JavaScript task</div>
     <div>
-        You can output to the Flow's output by using the provided functions <b>log</b> and <b>logError</b>. Do note that output from a JavaScript task is not accessible by any other task, and is only for visual inspection. You can still use
-        <b>console.log</b> to get more debug output.
+        You can output to the Flow's output by using the provided functions <b>log</b> and <b>logError</b>. Do note that output from a JavaScript task is not accessible by any other task, and is only for visual inspection. 
     </div>
-    <div class="bg-gray-800 text-white p-2 rounded-lg shadow-md m-2">
-        <pre class="overflow-x-auto"><code class="language-javascript">function log(output: string): void;</code></pre>
-        <pre class="overflow-x-auto"><code class="language-javascript">function logError(output: string): void;</code></pre>
+    <div class="bg-gray-800 text-white p-2 rounded-lg shadow-md m-2 overflow-x-auto">
+        <pre class=""><code class="language-javascript">function log(output: string): void;</code></pre>
+        <pre class=""><code class="language-javascript">function logError(output: string): void;</code></pre>
     </div>
     <br />
     <div class="text-xl font-bold">Fetching resources protected by CORS</div>
@@ -45,6 +44,7 @@
     headers?: {'{'} [header: string]: string },
     body?: string
 } = {'{'}}): Promise&lt;{'{'}
+    ok: boolean,
     status: number,
     headers: {'{'} [header: string]: string },
     text: () => Promise&lt;string&gt;,

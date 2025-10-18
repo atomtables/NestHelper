@@ -38,10 +38,10 @@
         setTimeout(() => (showChildren = true), 700);
     });
 
-    const startFlow = () => {
+    const startFlow = async () => {
         currentFlow.set = true;
         currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull');
-        currentFlow.value.start();
+        await currentFlow.value.start();
     };
 
     let handler = async () => {

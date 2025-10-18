@@ -1,20 +1,20 @@
 <!-- this only exists so i don't reload SSH every time i make a UI change -->
-<script>
+<script lang="ts">
     import folder from '$lib/assets/folder.png';
     import file from '$lib/assets/file.png';
     import Input from '$lib/components/generic/Input.svelte';
     import Button from '$lib/components/generic/Button.svelte';
     import { alert } from '$lib/components/generic/Dialog.svelte';
-    import { app, filesystem } from '$lib/state/states.svelte.ts';
+    import { app, filesystem, type FileFolder } from '$lib/state/states.svelte';
     import { confirm } from '$lib/components/generic/Dialog.svelte';
-    import { Command } from '$lib/conn/Command.ts';
+    import { Command } from '$lib/conn/Command';
     import File from '$lib/components/viewers/File.svelte';
-    import { supportedBinary, supportedImage } from '$lib/helpers/monaco.ts';
+    import { supportedBinary, supportedImage } from '$lib/helpers/monaco';
     import ImageFile from '$lib/components/viewers/ImageFile.svelte';
+    import BinaryFile from '$lib/components/viewers/BinaryFile.svelte';
 
-    const sort = (children) => Object.entries(children || {}).sort(([a, x], [b, y]) => (x.type === 'folder' && y.type === 'folder' ? a.localeCompare(b) : x.type === 'folder' ? -1 : y.type === 'folder' ? 1 : a.localeCompare(b)));
+    const sort = (children: FileFolder) => Object.entries(children || {}).sort(([a, x], [b, y]) => (x.type === 'folder' && y.type === 'folder' ? a.localeCompare(b) : x.type === 'folder' ? -1 : y.type === 'folder' ? 1 : a.localeCompare(b)));
 
-    // noinspection JSUnresolvedReference
     let currentFolder = $derived.by(() => {
         let folder = filesystem.value.files;
         for (let i = 1; i < filesystem.value.currentFolder.length; i++) {
@@ -23,7 +23,7 @@
         return sort(folder.children);
     });
     let { currentFilePath = $bindable(), selectedFile = $bindable() } = $props();
-    let selectedFileType = $state(0);
+    let selectedFileType: 0 | 1 | 2 = $state(0);
 
     const read = (file) => `python3 -c 'with open("${file}", "rb") as f:print([int(x) for x in f.read()])'`;
 
@@ -76,11 +76,12 @@
         currentFilePath = null;
     };
     const deleteFile = async () => {
-        let [result] = await confirm('Are you sure you would like to delete this file?', `You are about to delete the file <b>${selectedFile[0]}</b>. Would you like to continue?`);
+        let result = await confirm('Are you sure you would like to delete this file?', `You are about to delete the file <b>${selectedFile[0]}</b>. Would you like to continue?`);
         if (!result) return;
 
         let filePath = filesystem.value.currentFolder.join('/') + '/' + selectedFile[0];
         filesystem.value.fileData[filePath] = {
+            type: 0,
             original: new Uint8Array([]),
             modified: new Uint8Array([]),
             deletedFile: true,
@@ -111,7 +112,7 @@
             </div>
         </div>
         {#each currentFolder as [key, value]}
-            <div
+            <button
                 class="pl-2 max-w-full w-full flex flex-row items-center gap-3
                          hover:bg-purple-800 active:bg-purple-700 transition-all
                            {fileWasModified(folderPath.join('/') + `/${key}`) && 'text-amber-500'}
@@ -139,7 +140,7 @@
                     <img src={file} alt="folder" class="w-4" />
                     <div class="text-ellipsis overflow-x-clip whitespace-nowrap">{key}</div>
                 {/if}
-            </div>
+            </button>
         {/each}
     </div>
     <div class="flex-3/4 w-full flex flex-col justify-center items-center m-4 overflow-auto scroll-auto">
@@ -150,6 +151,8 @@
                     <File filename={selectedFile[0]} filePath={currentFilePath} nvm={unloadFile} />
                 {:else if filesystem.value.fileData[currentFilePath].type === 1}
                     <ImageFile filePath={currentFilePath} filename={selectedFile[0]} nvm={unloadFile} />
+                {:else if filesystem.value.fileData[currentFilePath].type === 2}
+                    <BinaryFile filePath={currentFilePath} filename={selectedFile[0]} nvm={unloadFile} />
                 {:else}
                     {filesystem.value.fileData[currentFilePath].type}
                 {/if}

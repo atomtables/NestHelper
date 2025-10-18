@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import Spinner from '$lib/components/generic/Spinner.svelte';
     import { draw, fade, scale, slide } from 'svelte/transition';
     import { onMount } from 'svelte';
@@ -49,7 +49,15 @@
                 <Button class="p-2 rounded-full" onclick={() => ((popShows[i] = !popShows[i]), hideAll(i))}>Output</Button>
                 {#if window.matchMedia('(min-width: 40rem)').matches && popShows[i]}
                     <div class="absolute flex flex-col overflow-scroll scroll-auto bg-neutral-200 dark:bg-neutral-900 right-28 h-48 w-96 lg:w-4/5 p-5 z-50 shadow-2xl origin-right" transition:scale={{ duration: 200, easing: quartInOut }}>
-                        {@html task.output}
+                        {#each task.outputArr as output}
+                            {#if output.file === 'stdout'}
+                                <pre>{output.output}</pre>
+                            {:else if output.file === "stderr"}
+                                <pre class="text-red-500">{output.output}</pre>
+                            {:else}
+                                {@html output.output}
+                            {/if}
+                        {/each}
                     </div>
                 {/if}
             </div>
@@ -63,8 +71,8 @@
 </div>
 
 {#if Object.entries(popShows).find(([k, v]) => v) && !window.matchMedia('(min-width: 40rem)').matches}
-    <div class="absolute p-8 top-0 right-0 left-0 bottom-0" onclick={() => (popShows = {})}>
-        <div class="p-5 flex flex-col overflow-scroll scroll-auto h-full w-full z-50 shadow-2xl bg-neutral-200 dark:bg-neutral-900" transition:scale={{ duration: 200, easing: quartInOut }} onclick={(e) => e.stopPropagation()}>
+    <div class="absolute p-8 top-0 right-0 left-0 bottom-0" onclick={() => (popShows = {})} role="dialog" tabindex="-1" onkeypress={(e) => e.key === 'Escape' && (popShows = {})}>
+        <div class="p-5 flex flex-col overflow-scroll scroll-auto h-full w-full z-50 shadow-2xl bg-neutral-200 dark:bg-neutral-900" transition:scale={{ duration: 200, easing: quartInOut }} onkeypress={(e) => e.key === 'Escape' && (popShows = {})} onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
             {@html currentFlow.value?.tasks[Object.entries(popShows).find(([k, v]) => v)[0]].output}
         </div>
     </div>

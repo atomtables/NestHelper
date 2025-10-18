@@ -8,6 +8,7 @@ export async function LocalFetch(
         body?: string;
     } = {}
 ): Promise<{
+    ok: boolean;
     status: number;
     headers: { [header: string]: string };
     text: () => Promise<string>;
@@ -29,6 +30,7 @@ export async function LocalFetch(
     });
 
     return {
+        ok: result.status >= 200 && result.status <= 299,
         status: result.status,
         headers: result.headers,
         text: async () => result.body,

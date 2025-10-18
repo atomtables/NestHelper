@@ -1,18 +1,17 @@
-<script>
+<script lang="ts">
     import { quartInOut, quintIn } from 'svelte/easing';
     import Spinner from '$lib/components/generic/Spinner.svelte';
     import Button from '$lib/components/generic/Button.svelte';
     import { slide } from 'svelte/transition';
     import Input from '$lib/components/generic/Input.svelte';
     import trash from '$lib/assets/trash.png';
-    import { app, auth, save } from '$lib/state/states.svelte.ts';
+    import { app, auth, save, userflows, load } from '$lib/state/states.svelte';
     import { onMount, onDestroy, tick } from 'svelte';
     import command from '$lib/assets/command.png';
     import frontend from '$lib/assets/frontend.png';
     import { flip } from 'svelte/animate';
     import { confirm, alert } from '$lib/components/generic/Dialog.svelte';
     import { beforeNavigate, goto } from '$app/navigation';
-    import { userflows, load } from '$lib/state/states.svelte.ts';
     import Editor from '$lib/components/Editor.svelte';
     import EditingJSTask from './EditingJSTask.svelte';
 
@@ -42,13 +41,13 @@
     });
     const leave = async () => {
         if (editingFlow.draft) {
-            let [result] = await confirm('Are you sure you want to leave?', 'This flow has not been saved and will be lost.');
+            let result = await confirm('Are you sure you want to leave?', 'This flow has not been saved and will be lost.');
             if (result) {
                 userflows.value.flows = userflows.value.flows.filter((v) => JSON.stringify(v) !== JSON.stringify(editingFlow));
                 editingFlow = null;
             }
         } else if (!saved) {
-            let [result] = await confirm('Are you sure you want to leave?', 'Your changes have not been saved and will be lost.');
+            let result = await confirm('Are you sure you want to leave?', 'Your changes have not been saved and will be lost.');
             if (result) {
                 editingFlow = null;
                 await load(userflows);
@@ -75,7 +74,7 @@
     let scrolling;
     let editingCurrentTask = $state(-1);
     const editJS = async (index) => {
-        let [result] = await confirm(
+        let result = await confirm(
             'WARNING: DISCLAIMER',
             'Running incorrectly formed arbitrary JavaScript code on the frontend can severely damage the functionality of the app, resulting ' +
                 'in code that may cause devastating bugs on your Nest account. Moreover, you should NEVER run code that anyone ' +
@@ -94,7 +93,7 @@
                 {#each editingFlow.tasks as task, i (i)}
                     <div class="relative flex flex-col items-start gap-2 w-full dark:bg-purple-900 bg-purple-300 p-2 rounded-2xl" transition:slide animate:flip>
                         <div class="flex flex-col items-start gap-4 p-5 w-full">
-                            <div class="-my-4 w-full">
+                            <div class="-mt-4 w-full">
                                 <Input action={() => (saved = false)} name="Task name" bind:value={task.task} class="font-bold text-xl w-full" />
                             </div>
                             <div class="-my-3 w-full">
@@ -111,11 +110,11 @@
                             {:else}
                                 <div class="-mb-3">This task runs using SSH on your Nest account.</div>
                                 <div class="flex flex-row justify-between items-center w-full gap-2">
-                                    <Input action={() => (saved = false)} autocorrect="off" autocapitalize="off" spellcheck="false" name="Command" bind:value={task.command} />
+                                    <Input action={() => (saved = false)} noautomodify name="Command" bind:value={task.command} />
                                 </div>
-                                <div class="flex flex-row items-center justify-end w-full gap-5 -mt-5">
-                                    <Input action={() => (saved = false)} name="Working directory" bind:value={task.cwd} class="text-xs" />
-                                    <Input action={() => (saved = false)} name="Postdelay (s)" bind:value={task.delay} class="text-xs w-30!" />
+                                <div class="flex flex-row items-center justify-end w-full gap-5 -mt-2">
+                                    <Input action={() => (saved = false)} name="Working directory" noautomodify bind:value={task.cwd} class="text-xs" />
+                                    <Input title="Set how many seconds of waiting should occur once this task finishes" action={() => (saved = false)} name="Postdelay (s)" bind:value={task.delay} class="text-xs w-30!" />
                                     <Button destructive onclick={() => ((saved = false), editingFlow.tasks.splice(i, 1))}>
                                         <img src={trash} alt="delete" class="h-6" />
                                     </Button>
@@ -185,7 +184,7 @@
             <Button
                 destructive
                 onclick={async () => {
-                    let [result] = await confirm('Delete Flow', 'Are you sure you would like to delete this flow? This action cannot be undone.');
+                    let result = await confirm('Delete Flow', 'Are you sure you would like to delete this flow? This action cannot be undone.');
                     if (result) {
                         userflows.value.flows = userflows.value.flows.filter((v) => JSON.stringify(v) !== JSON.stringify(editingFlow));
                         userflows.set = true;

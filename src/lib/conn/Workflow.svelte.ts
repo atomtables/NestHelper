@@ -1,7 +1,8 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { auth } from '$lib/state/states.svelte.js';
+import { AsyncFunction, auth } from '$lib/state/states.svelte.js';
 import { emit } from '@tauri-apps/api/event';
 import { LocalFetch } from '$lib/helpers/LocalFetch.js';
+import { tick } from 'svelte';
 
 export type ProcessEvent =
     | {
@@ -54,6 +55,10 @@ export type Task = {
 
     state?: 'inactive' | 'ongoing' | 'done' | 'failed';
     output?: string;
+    outputArr?: {
+        output: string,
+        file: 'stdout' | 'stderr' | 'raw'
+    }[];
     stdout?: string;
     stderr?: string;
 };
@@ -99,7 +104,10 @@ export default class Workflow {
                 state: 'inactive',
                 output: `<i>${task.command || ''}</i>`,
                 stdout: ``,
+                outputArr: [],
                 stderr: ``,
+                // @ts-ignore shut up
+                promise: new AsyncFunction('output', 'log', 'logError', 'fetchNoCors', task.promiseCode)
             })
         );
         this.tasks.unshift({
@@ -107,12 +115,13 @@ export default class Workflow {
             task: 'Connecting via SSH',
             state: 'inactive',
             output: '',
+            outputArr: [],
             stdout: ``,
             stderr: ``,
         });
     }
 
-    start() {
+    async start() {
         globalThis.flow = this;
         this.started = true;
         this.currentTask = 0;
@@ -121,18 +130,50 @@ export default class Workflow {
         this.startedAt = new Date();
         this.finishedAt = null;
 
+        this.tasks = this.tasks.map(
+            (task22): Task => {
+                let task: Task = Object.fromEntries(Object.entries(task22)) as Task;
+                task.state = 'inactive'
+                task.output = ''
+                task.outputArr = []
+                task.stdout = ''
+                task.stderr = ''
+                if (task.promiseCode) {
+                    // @ts-ignore You don't know what you're talking about.
+                    task.promise = new AsyncFunction('output', 'log', 'logError', 'fetchNoCors', task.promiseCode)
+                }
+                return task;
+            }
+        );
+
+        let wait = true;
+
+        await tick()
+
         let onEvent = new Channel<ProcessEvent>();
         onEvent.onmessage = async (message) => {
             if (message.event === 'started') {
                 this.tasks[this.currentTask].state = 'ongoing';
                 this.tasks[this.currentTask].output = `<i>${this.tasks[this.currentTask].command || ''}</i>`;
+                this.tasks[this.currentTask].outputArr.push({
+                    file: 'raw',
+                    output: `<i>${this.tasks[this.currentTask].command || ''}</i>`
+                });
             } else if (message.event === 'output') {
                 if (message.data.file === 'stderr') {
                     this.tasks[this.currentTask].output += `<div class="text-red-500">${message.data.output}</div>`;
                     this.tasks[this.currentTask].stderr += message.data.output + '\n';
+                    this.tasks[this.currentTask].outputArr.push({
+                        file: 'stderr',
+                        output: message.data.output
+                    });
                 } else {
                     this.tasks[this.currentTask].output += `<div>${message.data.output}</div>`;
                     this.tasks[this.currentTask].stdout += message.data.output + '\n';
+                    this.tasks[this.currentTask].outputArr.push({
+                        file: 'stdout',
+                        output: message.data.output
+                    });
                 }
             } else if (message.event === 'nextStage') {
                 this.tasks[this.currentTask].state = 'done';
@@ -142,14 +183,30 @@ export default class Workflow {
 
                     if (this.tasks[this.currentTask].frontend) {
                         this.tasks[this.currentTask].output = `<i>This task is handled by NestHelper and has no significant output.</i>`;
+                        this.tasks[this.currentTask].outputArr.push({
+                            file: 'raw',
+                            output: `<i>This task is handled by NestHelper and has no significant output.</i>`
+                        });
                         await Promise.resolve(
                             this.tasks[this.currentTask].promise(
                                 this.tasks.map((t) => ({
                                     stdout: t.stdout,
                                     stderr: t.stderr,
                                 })),
-                                (str) => (this.tasks[this.currentTask].output += `<div>${str}</div>`),
-                                (str) => (this.tasks[this.currentTask].output += `<div class="text-red-500">${str}</div>`),
+                                (str) => {
+                                    this.tasks[this.currentTask].output += `<div><pre>${str}</pre></div>`;
+                                    this.tasks[this.currentTask].outputArr.push({
+                                        file: 'stdout',
+                                        output: str
+                                    });
+                                },
+                                (str) => {
+                                    this.tasks[this.currentTask].output += `<div class="text-red-500">${str}</div>`;
+                                    this.tasks[this.currentTask].outputArr.push({
+                                        file: 'stderr',
+                                        output: str
+                                    });
+                                },
                                 LocalFetch
                             )
                         )
@@ -158,6 +215,10 @@ export default class Workflow {
                             })
                             .catch((err) => {
                                 this.tasks[this.currentTask].output += `<div class="text-red-500">Error in frontend task: ${err.message}</div>`;
+                                this.tasks[this.currentTask].outputArr.push({
+                                    file: 'stderr',
+                                    output: err.message
+                                });
                                 emit('error_on_the_frontend');
                             });
                     }

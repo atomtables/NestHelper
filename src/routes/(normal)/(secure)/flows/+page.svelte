@@ -50,9 +50,9 @@
                             </div>
                             <div class="flex flex-row justify-end gap-2">
                                 <Button
-                                    onclick={() => {
+                                    onclick={async () => {
                                         currentFlow.value = new Workflow(flow.tasks, flow.name);
-                                        currentFlow.value.start();
+                                        await currentFlow.value.start();
                                         goto('/flow');
                                     }}>Run</Button
                                 >

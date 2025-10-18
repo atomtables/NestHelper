@@ -10,7 +10,7 @@
     import Dropdown from '$lib/components/generic/Dropdown.svelte';
     import Button from '$lib/components/generic/Button.svelte';
     import { slide, fade, draw, scale } from 'svelte/transition';
-    import { quintIn } from 'svelte/easing';
+    import { cubicOut, quintIn } from 'svelte/easing';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { alert, confirm } from '$lib/components/generic/Dialog.svelte';
@@ -20,6 +20,7 @@
     import Flows from '$lib/conn/Flows';
     import command from '$lib/assets/command.png';
     import flows from '$lib/assets/flows.png';
+    import SSHConfigurator from '$lib/components/SSHConfigurator.svelte';
 
     let { children } = $props();
     let open = $state(false);
@@ -90,6 +91,8 @@
             }
         });
     });
+
+    let opensshsettings = $state(false);
 </script>
 
 <svelte:head>
@@ -210,14 +213,29 @@
                     </Button>
                 </div>
             {/if}
-            <Dropdown items={['Log out']} onselect={(v) => v === 0 && ((auth.value.username = null), saveAll(), goto('/'))} class="mr-2 select-none text-sm bg-black/0! hover:bg-neutral-700! px-1! rounded-none! py-0!"
-                >{auth.value.username}@hackclub.app</Dropdown
+            <Dropdown
+                items={['Log out', 'Edit SSH settings']}
+                direction="right"
+                onselect={(v) => (v === 0 && ((auth.value.username = null), saveAll(), goto('/'))) || (v === 1 && (opensshsettings = true))}
+                class="mr-2 select-none text-sm bg-black/0! hover:bg-purple-700! px-1! py-0!"
             >
+                {auth.value.username}@hackclub.app 
+            </Dropdown>
         </div>
     {/if}
 </div>
 <div class="w-screen h-[calc(100vh-var(--both-bars))] overflow-auto overscroll-none relative">
     {@render children?.()}
+    {#if opensshsettings}
+        <div class="w-screen h-screen fixed flex flex-col gap-2 items-center justify-center top-0 left-0 backdrop-blur-md bg-neutral-900/50 p-2" transition:fade={{ easing: cubicOut, duration: 200 }}>
+            <div class="max-w-4xl w-full bg-gray-900 p-2 rounded-2xl">
+                <SSHConfigurator />
+            </div>
+            <div class="max-w-4xl w-full flex items-end justify-end">
+                <Button onclick={() => (opensshsettings = false)}>Close</Button>
+            </div>
+        </div>
+    {/if}
 </div>
 <div class="h-(--bottom-bar) z-50 bg-purple-50 dark:bg-purple-950 flex flex-row items-center backdrop-blur-sm" data-tauri-drag-region>
     {#if app.value.status}

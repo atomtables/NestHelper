@@ -95,7 +95,7 @@
     };
 </script>
 
-<div class="w-full h-full">
+<div class="w-full h-full" transition:slide>
     <div class="w-full h-full flex flex-row flex-nowrap">
         <div class="flex-1/4 flex flex-col items-start w-full gap-0 p-2 bg-purple-900 overflow-y-auto scroll-y-auto">
             <div class="p-2 font-bold">Previous Commands</div>
@@ -153,7 +153,7 @@
                 <div class="bg-neutral-900 w-full flex flex-col items-center justify-center rounded-t-xl px-2">
                     <div class="flex flex-row items-center justify-start gap-2 w-full py-2 transition-all">
                         {#if currentCommand?.state === 'ongoing'}
-                            <div transition:slide={{ duration: 150 }}>
+                            <div transition:slide={{ duration: 150, axis: 'x' }}>
                                 <button onclick={() => currentCommand.promise.cancel()} class="group relative w-8 h-8 bg-purple-800 hover:bg-purple-700 active:bg-purple-600 cursor-pointer flex items-center justify-center rounded-full">
                                     <img src={stop} alt="stop current process" class="w-4" />
                                     <span
@@ -165,7 +165,7 @@
                             </div>
                         {/if}
                         {#if currentCommand?.returnCode !== undefined}
-                            <div transition:slide={{ duration: 150 }}>
+                            <div transition:slide={{ duration: 150, axis: 'x' }}>
                                 <button onclick={() => writeOutputToFile(currentCommand)} class="group relative w-8 h-8 bg-purple-800 hover:bg-purple-700 active:bg-purple-600 cursor-pointer flex items-center justify-center rounded-full">
                                     <img src={save} alt="stop current process" class="w-4" />
                                     <span
@@ -177,7 +177,7 @@
                             </div>
                         {/if}
                         {#if currentCommand && currentCommand?.state !== 'ongoing'}
-                            <div transition:slide={{ duration: 150 }}>
+                            <div transition:slide={{ duration: 150, axis: 'x' }}>
                                 <button
                                     onclick={() => {
                                         commandHistory.value.history = commandHistory.value.history.filter((v) => v.id !== currentCommand.id);

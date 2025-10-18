@@ -1,5 +1,5 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import Button from '$lib/components/generic/Button.svelte';
     import { app, auth, caddy, currentFlow, server, services, userflows } from '$lib/state/states.svelte.ts';
     import Workflow from '$lib/conn/Workflow.svelte.ts';
@@ -8,20 +8,22 @@
     import { wait } from '$lib/components/generic/Dialog.svelte';
 
     let now = new Date().getTime();
-    onMount(() => {
-        let x = setInterval(() => {
+    let x;
+    onMount(async () => {
+        x = setInterval(() => {
             now = new Date().getTime();
         }, 1000);
 
         if (!app.value.latestNestData) {
             currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull');
-            currentFlow.value.start();
+            await currentFlow.value.start();
             // wait(currentFlow.value.promise, "Pulling latest data from Nest", "This process may take a while, but is necessary for showing the latest data.");
             currentFlow.value.promise.then(() => (app.value.latestNestData = true));
         }
         app.value.status = '';
-        return () => clearInterval(x);
     });
+
+    onDestroy(() => clearInterval(x));
 </script>
 
 <svelte:boundary>
@@ -31,14 +33,14 @@
                 <Spinner />
                 {#if currentFlow.value?.failed}
                     <div>Failed to run startup flow.</div>
-                    <Button onclick={() => ((currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull')), currentFlow.value.start(), currentFlow.value.promise.then(() => currentFlow.value.complete && reset()))}>Restart</Button>
+                    <Button onclick={async () => ((currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull')), await currentFlow.value.start(), currentFlow.value.promise.then(() => currentFlow.value.complete && reset()))}>Restart</Button>
                 {:else if currentFlow.value}
                     <div>
                         Loading {currentFlow.value.name}... {currentFlow.value.task}...
                     </div>
                 {:else}
                     <div>You need to run the startup flow before continuing.</div>
-                    <Button onclick={() => ((currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull')), currentFlow.value.start(), currentFlow.value.promise.then(() => currentFlow.value.complete && reset()))}>Load flow</Button
+                    <Button onclick={async () => ((currentFlow.value = new Workflow(Flows.startup(), 'Startup Data Pull')), await currentFlow.value.start(), currentFlow.value.promise.then(() => currentFlow.value.complete && reset()))}>Load flow</Button
                     >
                 {/if}
             </div>

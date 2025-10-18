@@ -8,9 +8,9 @@
             {#each command.output as { file, output }, i (i)}
                 {@const isLast = i === command.output.length - 1 && command.state === 'ongoing'}
                 <div class="flex">
-                    <div class="text-gray-500 w-8 text-right pr-2 select-none">{i + 1}</div>
+                    <div class="text-gray-500 w-8 text-right pr-2 select-none shrink-0">{i + 1}</div>
                     <div class="flex-1 {file !== 'stdout' ? 'text-red-500' : ''}">
-                        {@html output}{#if isLast}<span class="animate-pulse">_</span>{/if}
+                        {output}{#if isLast}<span class="animate-pulse">_</span>{/if}
                     </div>
                 </div>
             {/each}
