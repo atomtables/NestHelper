@@ -21,7 +21,6 @@
     import command from '$lib/assets/command.png';
     import flows from '$lib/assets/flows.png';
     import SSHConfigurator from '$lib/components/SSHConfigurator.svelte';
-    import dropdown from '$lib/assets/chevron.down.png';
 
     let { children } = $props();
     let open = $state(false);
@@ -220,10 +219,7 @@
                 onselect={(v) => (v === 0 && ((auth.value.username = null), saveAll(), goto('/'))) || (v === 1 && (opensshsettings = true))}
                 class="mr-2 select-none text-sm bg-black/0! hover:bg-purple-700! px-1! py-0!"
             >
-                <span class="flex flex-row items-end justify-center w-max gap-1">
-                    <span>{auth.value.username}@hackclub.app</span>
-                    <img src={dropdown} alt="dropdown" class="w-2 mb-1.5">
-                </span>
+                {auth.value.username}@hackclub.app 
             </Dropdown>
         </div>
     {/if}
