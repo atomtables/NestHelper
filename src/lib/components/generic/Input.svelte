@@ -77,19 +77,3 @@
         />
     {/if}
 </div>
-
-<style>
-    .floating-label {
-        position: absolute;
-        left: 12px;
-        top: 1.4rem;
-        pointer-events: none;
-    }
-
-    .input-container:focus-within .floating-label,
-    .floating-label.up {
-        top: 0.75rem;
-        font-size: 0.75rem;
-        transform: none;
-    }
-</style>

@@ -136,6 +136,7 @@ macro_rules! command {
 
         // Final remote command
         command.arg($commands);
+        command.creation_flags(CREATE_NO_WINDOW);
 
         command
     }};
@@ -282,7 +283,6 @@ pub async fn run_ssh_flow(
         )
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
-            .creation_flags(CREATE_NO_WINDOW)
             .stderr(std::process::Stdio::piped())
             .spawn()
             .expect("Unable to spawn SSH")
@@ -546,7 +546,6 @@ pub async fn run_ssh_command(
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::null())
-        .creation_flags(CREATE_NO_WINDOW)
         .spawn()
         .map_err(|e| CommandOutput {
             code: 255,
@@ -651,7 +650,6 @@ pub async fn run_ssh_command_with_stream(
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
-        .creation_flags(CREATE_NO_WINDOW)
         .spawn()
         .map_err(|e| e.to_string())?;
     #[cfg(unix)]
@@ -793,7 +791,6 @@ pub async fn ssh_edit_file(
             format!("dd of={}", remote_path)
         )
         .stdin(std::process::Stdio::piped())
-        .creation_flags(CREATE_NO_WINDOW)
         .spawn()
         .expect("Unable to spawn SSH");
     #[cfg(unix)]
