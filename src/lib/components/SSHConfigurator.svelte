@@ -81,5 +81,8 @@
         <Input class="transition-all {!jump_server_selected && 'opacity-50 pointer-events-none'}" type="text" name="Jump Server Name (username@server)" bind:value={jumpServer} />
         <Input class="transition-all {!jump_server_selected && 'opacity-50 pointer-events-none'}" type="password" name="Jump Server password" bind:value={jumpPassword} />
     </div>
+    <div class="text-sm text-neutral-400">
+        Warning: Windows platforms only support key files in PPK format (PuTTY) without a passphrase, and may not even support jump servers. Avoid these functionalities on Windows (macOS and Linux are all good).
+    </div>
     <Input class="transition-all" type="text" name="Other SSH switches" bind:value={switches} />
 </div>

@@ -16,7 +16,7 @@ pub(crate) fn get_sshpass_plink(app: AppHandle) -> Result<String, Box<dyn std::e
          .expect("Failed to resolve resource path").to_string_lossy().to_string();
     #[cfg(target_os = "windows")]
     let sshpass_path = app.path().resolve("assets/plink.exe", BaseDirectory::Resource)
-         .expect("Failed to resolve resource path").to_string_lossy().to_string();
+         .expect("Failed to resolve resource path").into_os_string().into_string().expect("Failed to convert OsString to String");
 
     Ok(sshpass_path)
 }

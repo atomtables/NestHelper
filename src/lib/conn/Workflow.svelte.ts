@@ -107,7 +107,7 @@ export default class Workflow {
                 outputArr: [],
                 stderr: ``,
                 // @ts-ignore shut up
-                promise: new AsyncFunction('output', 'log', 'logError', 'fetchNoCors', task.promiseCode)
+                promise: (!task.promise && task.promiseCode) ? new AsyncFunction('output', 'log', 'logError', 'fetchNoCors', task.promiseCode) : task.promise,
             })
         );
         this.tasks.unshift({
@@ -140,7 +140,7 @@ export default class Workflow {
                 task.stderr = ''
                 if (task.promiseCode) {
                     // @ts-ignore You don't know what you're talking about.
-                    task.promise = new AsyncFunction('output', 'log', 'logError', 'fetchNoCors', task.promiseCode)
+                    task.promise = (!task.promise && task.promiseCode) ? new AsyncFunction('output', 'log', 'logError', 'fetchNoCors', task.promiseCode) : task.promise
                 }
                 return task;
             }
