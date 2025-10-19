@@ -22,3 +22,6 @@ unnecessary. Instead, NestHelper abstracts this using a GUI, separating input fr
 it took me ages to get AtomChatDB set up, between the constant pushes and pulls, especially
 with the insane latency. abstraction allowed me to get my new project, Ondru, up and
 running really really quickly.
+
+
+![video](https://github.com/user-attachments/assets/cb6f2ac7-9b9d-4377-9f8b-dad210a120a6)
