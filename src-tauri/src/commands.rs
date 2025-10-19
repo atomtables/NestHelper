@@ -91,15 +91,19 @@ macro_rules! command {
         $switches:expr,
         $commands:expr
     ) => {{
+        use std::process::Command;
+
         let plink_cloned = $plink_path.clone();
         let mut command = Command::new(&plink_cloned);
 
+        let mut args: Vec<String> = Vec::new();
+
         // Handle jump server via -proxycmd using plink -nc
-        if let Some(jump_host) = $jump_server.as_str() {
+        if let Some(ref jump_host) = $jump_server.as_ref() {
             let mut proxy_cmd = format!("{} ", plink_cloned);
 
             // Jump password (optional)
-            if let Some(jump_pw) = $jump_password.as_str() {
+            if let Some(ref jump_pw) = $jump_password.as_ref() {
                 proxy_cmd.push_str(&format!("-pw {} ", jump_pw));
             }
 
@@ -110,33 +114,34 @@ macro_rules! command {
                 jump_host
             ));
 
-            command.arg("-proxycmd");
-            command.arg(proxy_cmd);
+            args.push("-proxycmd".to_string());
+            args.push(proxy_cmd);
         }
 
         // Add key file if provided
-        if let Some(keyfile) = $key_file.as_str() {
-            command.arg("-i");
-            command.arg(keyfile);
+        if let Some(ref keyfile) = $key_file.as_ref() {
+            args.push("-i".to_string());
+            args.push(keyfile.clone());
         }
 
         // Add password/passphrase if provided
-        if let Some(passphrase) = $key_passphrase.as_str() {
-            command.arg("-pw");
-            command.arg(passphrase);
+        if let Some(ref passphrase) = $key_passphrase.as_ref() {
+            args.push("-pw".to_string());
+            args.push(passphrase.clone());
         }
 
         // Add additional switches
-        if let Some(sw) = $switches.as_str() {
-            command.args(sw.split_whitespace());
+        if let Some(ref sw) = $switches.as_ref() {
+            args.extend(sw.split_whitespace().map(|s| s.to_string()));
         }
 
         // Final destination
-        command.arg(format!("{}@hackclub.app", $username));
+        args.push(format!("{}@hackclub.app", $username));
 
         // Final remote command
-        command.arg($commands);
+        args.push($commands.to_string());
 
+        command.args(&args);
         command
     }};
 }
