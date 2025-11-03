@@ -146,24 +146,16 @@ const saveFiles = (files: string[], backup: boolean): Task[] => {
     let tasks: Task[] = [];
 
     for (let file of files) {
-        const backupCommand = `mv ${file} ${file}.bak`;
+        const backupCommand = `mv '${file}' '${file}.bak'`;
 
+        
         if (filesystem.value.fileData[file].deletedFile) {
             tasks.push({
-                command: `rm ${file}`,
+                command: `rm '${file}'`,
                 task: `Deleting file ${file}`,
             });
             continue;
         }
-        if (backup && !filesystem.value.fileData[file].newFile)
-            tasks.push({
-                command: backupCommand,
-                task: `Backing up original file ${file} to ${file}.bak`,
-            });
-    }
-
-    for (let file of files) {
-        if (filesystem.value.fileData[file].deletedFile) continue;
         tasks.push({
             command: null,
             task: `Saving file ${file} to server`,
@@ -173,6 +165,17 @@ const saveFiles = (files: string[], backup: boolean): Task[] => {
                 await saveAll();
             },
         });
+        if (backup && !filesystem.value.fileData[file].newFile)
+            tasks.push({
+                command: backupCommand,
+                task: `Backing up original file ${file} to ${file}.bak`,
+            });
+        if (filesystem.value.fileData[file].renamedFile?.[0]) {
+            tasks.push({
+                command: `mv '${file}' '${filesystem.value.fileData[file].renamedFile[1]}'`,
+                task: `Renaming file ${file} to ${filesystem.value.fileData[file].renamedFile[1]}`,
+            });
+        }
     }
 
     return tasks;

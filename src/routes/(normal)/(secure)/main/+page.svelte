@@ -21,6 +21,7 @@
             currentFlow.value.promise.then(() => (app.value.latestNestData = true));
         }
         app.value.status = '';
+        app.value.pageActions = [];
     });
 
     onDestroy(() => clearInterval(x));

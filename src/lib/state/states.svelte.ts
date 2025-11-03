@@ -58,7 +58,7 @@ export let caddy = $state<State<WithUpdate<CaddySettings>>>({
     value: null,
 });
 
-type Flow = {
+export type Flow = {
     tasks: Task[]; // i am NOT adding control flow yet.
     name: string;
     lastUpdated: Date;
@@ -92,6 +92,8 @@ type Filesystem = {
             modified: Uint8Array<ArrayBuffer>;
             newFile?: boolean;
             deletedFile?: boolean;
+            renamedFile?: [boolean, string];
+            // fileAs: what language is the file (text only)
             fileAs?: string;
         };
     };
@@ -132,11 +134,11 @@ type CommandHistory = {
     id: string;
     command: string;
     timestamp: Date;
-    returnCode: number;
-    stdout: string;
-    stderr: string;
-    output: string;
-    outputArr: { file: 'stdout' | 'stderr'; output: string }[];
+    returnCode?: number;
+    stdout?: string;
+    stderr?: string;
+    output?: string;
+    outputArr?: { file: 'stdout' | 'stderr'; output: string }[];
 };
 type CommandHistoryWrapper = {
     history: CommandHistory[];

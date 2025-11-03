@@ -26,12 +26,7 @@ macro_rules! command {
         let mut command = Command::new(&sshpass_plink_cloned);
 
         if let Some(ref passphrase) = $key_passphrase.as_str() {
-            let pass_args = vec![
-                "-p",
-                passphrase,
-                "-P",
-                "passphrase",
-            ];
+            let pass_args = vec!["-p", passphrase, "-P", "passphrase"];
             command.args(pass_args);
         }
 
@@ -39,15 +34,20 @@ macro_rules! command {
 
         if let Some(jump) = $jump_server.as_str() {
             if let Some(pass) = $jump_password.as_str() {
-                command.arg(format!(
-                    "-oProxyCommand=\"{} -p '{}' ssh -W %h:%p {}\"",
-                    sshpass_plink_cloned, pass, jump
-                ));
+                let sshpass_escaped = sshpass_plink_cloned.replace('\'', "'\\''");
+                let pass_escaped = pass.replace('\'', "'\\''");
+                let proxy = format!(
+                    "-oProxyCommand=sh -c 'exec {} -p '{}' ssh -W %h:%p {}'",
+                    sshpass_escaped, pass_escaped, jump
+                );
+                command.arg(proxy);
             } else {
-                command.arg(format!(
-                    "-oProxyCommand=\"{} ssh -W %h:%p {}\"",
-                    sshpass_plink_cloned, jump
-                ));
+                let sshpass_escaped = sshpass_plink_cloned.replace('\'', "'\\''");
+                let proxy = format!(
+                    "-oProxyCommand=sh -c 'exec {} ssh -W %h:%p {}'",
+                    sshpass_escaped, jump
+                );
+                command.arg(proxy);
             }
         }
 
@@ -104,11 +104,7 @@ macro_rules! command {
             }
 
             // Netcat-like forwarding to target
-            proxy_cmd.push_str(&format!(
-                "{}@{} -nc hackclub.app:22",
-                $username,
-                jump_host
-            ));
+            proxy_cmd.push_str(&format!("{}@{} -nc hackclub.app:22", $username, jump_host));
 
             command.arg("-proxycmd");
             command.arg(proxy_cmd);
@@ -141,7 +137,6 @@ macro_rules! command {
         command
     }};
 }
-
 
 // this is all for running an SSH flow.
 #[derive(Clone, Serialize)]
@@ -281,33 +276,31 @@ pub async fn run_ssh_flow(
             switches,
             format_commands(&username.to_string(), &commands)
         )
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .spawn()
-            .expect("Unable to spawn SSH")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("Unable to spawn SSH"),
     ));
 
     #[cfg(unix)]
-    let child = Arc::new(tokio::sync::Mutex::new(
-        {
-            command!(
-                sshpass_plink.clone(),
-                username,
-                key_passphrase,
-                jump_server,
-                jump_password,
-                key_file,
-                switches,
-                format_commands(&username.to_string(), &commands)
-            )
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .spawn()
-                .expect("Unable to spawn SSH")
-        },
-    ));
+    let child = Arc::new(tokio::sync::Mutex::new({
+        command!(
+            sshpass_plink.clone(),
+            username,
+            key_passphrase,
+            jump_server,
+            jump_password,
+            key_file,
+            switches,
+            format_commands(&username.to_string(), &commands)
+        )
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("Unable to spawn SSH")
+    }));
     let pid = {
         let child_lock = child.lock().await;
         child_lock.id().expect("Unable to get process ID")
@@ -534,44 +527,44 @@ pub async fn run_ssh_command(
     let sshpass_plink = get_sshpass_plink(app.clone()).expect("idk where sshpass is so XP");
     #[cfg(windows)]
     let child = command!(
-            sshpass_plink.clone(),
-            username,
-            key_passphrase,
-            jump_server,
-            jump_password,
-            key_file,
-            switches,
-            command
-        )
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .stdin(std::process::Stdio::null())
-        .spawn()
-        .map_err(|e| CommandOutput {
-            code: 255,
-            stdout: "".parse().unwrap(),
-            stderr: e.to_string(),
-        })?;
+        sshpass_plink.clone(),
+        username,
+        key_passphrase,
+        jump_server,
+        jump_password,
+        key_file,
+        switches,
+        command
+    )
+    .stdout(std::process::Stdio::piped())
+    .stderr(std::process::Stdio::piped())
+    .stdin(std::process::Stdio::null())
+    .spawn()
+    .map_err(|e| CommandOutput {
+        code: 255,
+        stdout: "".parse().unwrap(),
+        stderr: e.to_string(),
+    })?;
     #[cfg(unix)]
     let child = command!(
-            sshpass_plink.clone(),
-            username,
-            key_passphrase,
-            jump_server,
-            jump_password,
-            key_file,
-            switches,
-            command
-        )
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .stdin(std::process::Stdio::null())
-        .spawn()
-        .map_err(|e| CommandOutput {
-            code: 255,
-            stdout: "".parse().unwrap(),
-            stderr: e.to_string(),
-        })?;
+        sshpass_plink.clone(),
+        username,
+        key_passphrase,
+        jump_server,
+        jump_password,
+        key_file,
+        switches,
+        command
+    )
+    .stdout(std::process::Stdio::piped())
+    .stderr(std::process::Stdio::piped())
+    .stdin(std::process::Stdio::null())
+    .spawn()
+    .map_err(|e| CommandOutput {
+        code: 255,
+        stdout: "".parse().unwrap(),
+        stderr: e.to_string(),
+    })?;
 
     let pid = child.id().expect("Failed to get process ID");
     let app1 = app.clone();
@@ -638,36 +631,36 @@ pub async fn run_ssh_command_with_stream(
     let sshpass_plink = get_sshpass_plink(app.clone()).expect("idk where sshpass is so XP");
     #[cfg(windows)]
     let mut child = command!(
-            sshpass_plink.clone(),
-            username,
-            key_passphrase,
-            jump_server,
-            jump_password,
-            key_file,
-            switches,
-            command.clone()
-        )
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .stdin(std::process::Stdio::piped())
-        .spawn()
-        .map_err(|e| e.to_string())?;
+        sshpass_plink.clone(),
+        username,
+        key_passphrase,
+        jump_server,
+        jump_password,
+        key_file,
+        switches,
+        command.clone()
+    )
+    .stdout(std::process::Stdio::piped())
+    .stderr(std::process::Stdio::piped())
+    .stdin(std::process::Stdio::piped())
+    .spawn()
+    .map_err(|e| e.to_string())?;
     #[cfg(unix)]
     let mut child = command!(
-            sshpass_plink.clone(),
-            username,
-            key_passphrase,
-            jump_server,
-            jump_password,
-            key_file,
-            switches,
-            command.clone()
-        )
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .stdin(std::process::Stdio::piped())
-        .spawn()
-        .map_err(|e| e.to_string())?;
+        sshpass_plink.clone(),
+        username,
+        key_passphrase,
+        jump_server,
+        jump_password,
+        key_file,
+        switches,
+        command.clone()
+    )
+    .stdout(std::process::Stdio::piped())
+    .stderr(std::process::Stdio::piped())
+    .stdin(std::process::Stdio::piped())
+    .spawn()
+    .map_err(|e| e.to_string())?;
 
     let pid = child.id().expect("Failed to get process ID");
     let app1 = app.clone();
@@ -781,32 +774,33 @@ pub async fn ssh_edit_file(
     let sshpass_plink = get_sshpass_plink(app.clone()).expect("idk where sshpass is so XP");
     #[cfg(windows)]
     let mut ssh = command!(
-            sshpass_plink.clone(),
-            username,
-            key_passphrase,
-            jump_server,
-            jump_password,
-            key_file,
-            switches,
-            format!("dd of={}", remote_path)
-        )
-        .stdin(std::process::Stdio::piped())
-        .spawn()
-        .expect("Unable to spawn SSH");
+        sshpass_plink.clone(),
+        username,
+        key_passphrase,
+        jump_server,
+        jump_password,
+        key_file,
+        switches,
+        format!("dd of='{}'", remote_path)
+    )
+    .stdin(std::process::Stdio::piped())
+    .spawn()
+    .expect("Unable to spawn SSH");
     #[cfg(unix)]
     let mut ssh = command!(
-            sshpass_plink.clone(),
-            username,
-            key_passphrase,
-            jump_server,
-            jump_password,
-            key_file,
-            switches,
-            format!("dd of={}", remote_path)
-        )
-        .stdin(std::process::Stdio::piped())
-        .spawn()
-        .expect("Unable to spawn SSH");
+        sshpass_plink.clone(),
+        username,
+        key_passphrase,
+        jump_server,
+        jump_password,
+        key_file,
+        switches,
+        format!("dd of='{}'", remote_path)
+    )
+    .stdin(std::process::Stdio::piped())
+    .spawn()
+    .expect("Unable to spawn SSH");
+
     let mut stdin = ssh.stdin.take().expect("Failed to open stdin");
     stdin
         .write_all(&new_content)

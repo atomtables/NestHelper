@@ -1,26 +1,39 @@
-<script>
+<script lang="ts">
     import { flip } from 'svelte/animate';
     import Input from '$lib/components/generic/Input.svelte';
     import Button from '$lib/components/generic/Button.svelte';
-    import { StreamedCommandSvelte } from '$lib/conn/StreamedCommand.svelte.ts';
+    import { StreamedCommandSvelte } from '$lib/conn/StreamedCommand.svelte';
     import Spinner from '$lib/components/generic/Spinner.svelte';
-    import { commandHistory, filesystem } from '$lib/state/states.svelte.ts';
-    import { onMount } from 'svelte';
+    import { app, commandHistory, filesystem } from '$lib/state/states.svelte';
+    import { onDestroy, onMount } from 'svelte';
     import stop from '$lib/assets/stop.png';
     import save from '$lib/assets/save.png';
     import trash from '$lib/assets/trash.png';
     import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-    import { save as saveState } from '$lib/state/states.svelte.ts';
+    import { save as saveState } from '$lib/state/states.svelte';
     import CommandOutput from './CommandOutput.svelte';
     import { slide } from 'svelte/transition';
     import { create } from '@tauri-apps/plugin-fs';
+    import { alert } from '$lib/components/generic/Dialog.svelte';
 
-    let value = $state('');
-    let currentCommand = $state();
+    let value: string = $state('');
+    let currentCommand: StreamedCommandSvelte | null = $state();
 
     onMount(() => {
-        // commandHistory.value =  []
+        app.value.pageActions = [
+            [
+                'clear history',
+                () => {
+                    commandHistory.value.history = [];
+                    saveState(commandHistory);
+                    value = '';
+                    currentCommand = null;
+                },
+            ],
+        ];
+        app.value.status = "";
     });
+
     const submit = () => {
         currentCommand = new StreamedCommandSvelte(value);
         currentCommand.start();
@@ -128,7 +141,7 @@
                         </span>
                         <span class="flex flex-row items-center gap-2">
                             {#if cmd?.returnCode === undefined}
-                                <Spinner size="24px" />
+                                <Spinner size={24} />
                             {/if}
                             {cmd.command}
                         </span>
@@ -182,6 +195,8 @@
                                     onclick={() => {
                                         commandHistory.value.history = commandHistory.value.history.filter((v) => v.id !== currentCommand.id);
                                         currentCommand = null;
+                                        value = '';
+                                        saveState(commandHistory);
                                     }}
                                     class="group relative w-8 h-8 bg-purple-800 hover:bg-purple-700 active:bg-purple-600 cursor-pointer flex items-center justify-center rounded-full"
                                 >

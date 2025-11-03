@@ -1,6 +1,6 @@
-use tauri::Manager;
-use serde::{Deserialize, Serialize};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use serde::{Deserialize, Serialize};
+use tauri::Manager;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,16 +23,15 @@ pub(crate) struct FetchResponse {
 pub(crate) async fn tauri_fetch(request: FetchRequest) -> Result<FetchResponse, String> {
     let client = reqwest::Client::new();
 
-    let mut req = client
-        .request(
-            request
-                .method
-                .as_deref()
-                .unwrap_or("GET")
-                .parse()
-                .map_err(|e| format!("Invalid method: {}", e))?,
-            &request.url,
-        );
+    let mut req = client.request(
+        request
+            .method
+            .as_deref()
+            .unwrap_or("GET")
+            .parse()
+            .map_err(|e| format!("Invalid method: {}", e))?,
+        &request.url,
+    );
 
     if let Some(body) = &request.body {
         req = req.body(body.clone());
@@ -43,8 +42,8 @@ pub(crate) async fn tauri_fetch(request: FetchRequest) -> Result<FetchResponse, 
         for (key, value) in headers {
             let header_name = HeaderName::from_bytes(key.as_bytes())
                 .map_err(|e| format!("Invalid header name: {}", e))?;
-            let header_value = HeaderValue::from_str(value)
-                .map_err(|e| format!("Invalid header value: {}", e))?;
+            let header_value =
+                HeaderValue::from_str(value).map_err(|e| format!("Invalid header value: {}", e))?;
             header_map.insert(header_name, header_value);
         }
         req = req.headers(header_map);
@@ -59,12 +58,7 @@ pub(crate) async fn tauri_fetch(request: FetchRequest) -> Result<FetchResponse, 
     let headers = resp
         .headers()
         .iter()
-        .map(|(k, v)| {
-            (
-                k.to_string(),
-                v.to_str().unwrap_or("").to_string(),
-            )
-        })
+        .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
         .collect();
 
     let body = resp

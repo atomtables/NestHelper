@@ -31,6 +31,8 @@
         "@tauri-apps/api": "^2.7.0",
         "@tauri-apps/plugin-dialog": "~2",
         "@tauri-apps/plugin-fs": "~2.4.2",
+        "@tauri-apps/plugin-opener": "~2.5.2",
+        "@tauri-apps/plugin-os": "~2",
         "@tauri-apps/plugin-store": "^2.3.0",
         "uuid": "^11.1.0"
     }

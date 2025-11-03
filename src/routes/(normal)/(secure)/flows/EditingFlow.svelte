@@ -5,7 +5,7 @@
     import { slide } from 'svelte/transition';
     import Input from '$lib/components/generic/Input.svelte';
     import trash from '$lib/assets/trash.png';
-    import { app, auth, save, userflows, load } from '$lib/state/states.svelte';
+    import { app, auth, save, userflows, load, currentFlow } from '$lib/state/states.svelte';
     import { onMount, onDestroy, tick } from 'svelte';
     import command from '$lib/assets/command.png';
     import frontend from '$lib/assets/frontend.png';
@@ -14,6 +14,7 @@
     import { beforeNavigate, goto } from '$app/navigation';
     import Editor from '$lib/components/Editor.svelte';
     import EditingJSTask from './EditingJSTask.svelte';
+    import Workflow from '$lib/conn/Workflow.svelte';
 
     let { editingFlow = $bindable() } = $props();
 
@@ -23,7 +24,7 @@
         app.value.status = saved ? 'All changes saved' : 'Unsaved changes';
     });
     onMount(() => {
-        app.value.status = 'Editing flow';
+        app.value.status = 'No changes';
         app.value.pageActions.push(['back', leave]);
 
         beforeNavigate(async (e) => {
@@ -38,6 +39,7 @@
                 }
             }
         });
+        return () => (app.value.status = "")
     });
     const leave = async () => {
         if (editingFlow.draft) {
@@ -180,7 +182,7 @@
                 <span> New Frontend JS Task </span>
             </button>
         </div>
-        <div class="flex flex-row gap-2">
+        <div class="flex flex-row flex-wrap justify-end gap-2">
             <Button
                 destructive
                 onclick={async () => {
@@ -189,8 +191,8 @@
                         userflows.value.flows = userflows.value.flows.filter((v) => JSON.stringify(v) !== JSON.stringify(editingFlow));
                         userflows.set = true;
                         await save(userflows);
+                        editingFlow = null;
                     }
-                    editingFlow = null;
                 }}
             >
                 <img src={trash} alt="delete" class="h-6" />

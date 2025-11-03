@@ -3,7 +3,7 @@
     import flow from '$lib/assets/flow.png';
     import files from '$lib/assets/files.png';
     import save from '$lib/assets/save.png';
-    import { app, auth, currentFlow, filesystem, saveAll } from '$lib/state/states.svelte';
+    import { app, auth, caddy, currentFlow, filesystem, saveAll } from '$lib/state/states.svelte';
     import { page } from '$app/state';
     import image from '$lib/assets/favicon.png';
     import Spinner from '$lib/components/generic/Spinner.svelte';
@@ -13,7 +13,7 @@
     import { cubicOut, quintIn } from 'svelte/easing';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { alert, confirm } from '$lib/components/generic/Dialog.svelte';
+    import Dialog, { alert, confirm } from '$lib/components/generic/Dialog.svelte';
     import { getCurrentWindow } from '@tauri-apps/api/window';
     import Input from '$lib/components/generic/Input.svelte';
     import Workflow from '$lib/conn/Workflow.svelte';
@@ -21,12 +21,15 @@
     import command from '$lib/assets/command.png';
     import flows from '$lib/assets/flows.png';
     import SSHConfigurator from '$lib/components/SSHConfigurator.svelte';
+    import { platform } from '@tauri-apps/plugin-os';
 
     let { children } = $props();
     let open = $state(false);
     let saveBackup = $state(false);
 
     // Filesystem to save
+    let promptResolve: Function;
+    let promptOpen = $state(false);
     const saveFiles = async () => {
         let filesModified = [];
         for (const key in filesystem.value.fileData) {
@@ -34,20 +37,17 @@
             let arr2 = filesystem.value.fileData[key].modified;
             if (!(arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]))) {
                 filesModified.push(key);
-            } else if (filesystem.value.fileData[key].newFile || filesystem.value.fileData[key].deletedFile) {
+            } else if (filesystem.value.fileData[key].newFile || filesystem.value.fileData[key].deletedFile || filesystem.value.fileData[key].renamedFile?.[0]) {
                 filesModified.push(key);
             }
         }
 
+        // originally for debug but ig not anymore lol
         globalThis.filesModified = filesModified;
         globalThis.filesystem = filesystem;
 
-        let result = await confirm(
-            'Are you sure you would like to save all files?',
-            `You will be saving all files that you have modified. This includes the following files: <br> ${filesModified.map((f) => `<b>${f}</b>`).join('<br>')} <br> Would you like to continue?`,
-            saveFilesBackupConfirmation,
-            true
-        );
+        promptOpen = true
+        let result = await new Promise(res => promptResolve = res);
         if (!result) return;
         currentFlow.value = new Workflow(Flows.saveFiles(filesModified, saveBackup), 'Save modified files to server');
         await currentFlow.value.start();
@@ -73,7 +73,7 @@
             if (val.original.length !== val.modified.length || val.original.some((v, i) => v !== val.modified[i])) {
                 filesystem.value.filesWereModified = true;
                 return;
-            } else if (val.newFile || val.deletedFile) {
+            } else if (val.newFile || val.deletedFile || val.renamedFile?.[0]) {
                 filesystem.value.filesWereModified = true;
                 return;
             }
@@ -99,24 +99,55 @@
     <link rel="icon" href={favicon} />
 </svelte:head>
 
-{#snippet saveFilesBackupConfirmation()}
+<Dialog 
+title="Are you sure you would like to save all files?" 
+description="You will be saving all files that you have modified."
+bind:open={promptOpen}
+actions={[{
+    name: 'Discard Changes',
+    action: () => {
+        filesystem.value.fileData = {};
+        promptResolve(false);
+        promptOpen = false;
+    },
+    close: true
+}, {
+    name: 'Cancel',
+    action: () => promptResolve(false),
+    close: true
+}, {
+    name: 'Save',
+    action: () => promptResolve(true),
+    close: true,
+    primary: true
+}]}
+>
+    <div class="text-sm pb-3">
+        <span>You have unsaved changes in the following files:</span>
+        {#each globalThis.filesModified as file}
+            <div class="font-bold">{file}</div>
+        {/each}
+    </div>
     <div class="flex flex-row items-center gap-2">
         <Input name="" type="checkbox" bind:value={saveBackup} class="w-min" />
         <div class="text-sm">Save a backup of all files beforehand.</div>
     </div>
-{/snippet}
+</Dialog>
 
 <div class="h-(--top-bar) relative z-50 bg-purple-200 dark:bg-purple-900 flex flex-row justify-between items-center backdrop-blur-sm" data-tauri-drag-region>
     {#if app.value.persistentStoresLoaded && auth.value.username}
         {@const path = page.url.pathname}
         <div class="rounded-2xl flex flex-row items-center h-8 select-none gap-2 z-50">
-            <div class="transition-colors hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 rounded-full w-18.5 h-6 px-2 py-1 ml-2"></div>
+            {#if caddy.value?.caddyfile}
+            {#if platform() === 'macos'}
+                <div class="transition-colors hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 rounded-full w-18.5 h-6 px-2 py-1 ml-2"></div>
+            {/if}
             <a
                 href="/main"
                 aria-current={path === '/main'}
                 class="z-50 group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/main' && 'border-b-2'} p-2"
             >
-                <img src={image} alt="Home" class="w-6 h-4 object-scale-down" />
+                <img src={image} alt="Home" draggable="false" class="w-6 h-4 object-scale-down" />
                 <div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">Home</div>
             </a>
             <a
@@ -124,7 +155,7 @@
                 aria-current={path === '/flows'}
                 class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/flows' && 'border-b-2'} p-2"
             >
-                <img src={flows} alt="Flows" class="w-6 h-5 object-scale-down" />
+                <img src={flows} alt="Flows" draggable="false" class="w-6 h-5 object-scale-down" />
                 <div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">Flows</div>
             </a>
             <a
@@ -132,7 +163,7 @@
                 aria-current={path === '/flow'}
                 class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/flow' && 'border-b-2'} p-2"
             >
-                <img src={flow} alt="Flow" class="w-6 h-4 mt-0.5 object-scale-down" />
+                <img src={flow} alt="Flow" draggable="false" class="w-6 h-4 mt-0.5 object-scale-down" />
                 <div class="z-50 text-nowrap absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
                     Active Flow
                 </div>
@@ -142,7 +173,7 @@
                 aria-current={path === '/files'}
                 class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/files' && 'border-b-2'} p-2"
             >
-                <img src={files} alt="Flow" class="w-6 h-4 object-scale-down" />
+                <img src={files} alt="Flow" draggable="false" class="w-6 h-4 object-scale-down" />
                 <div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">Files</div>
             </a>
             <a
@@ -150,11 +181,12 @@
                 aria-current={path === '/command'}
                 class="group relative transition-colors flex flex-row items-center hover:bg-purple-300 dark:hover:bg-purple-800 active:bg-purple-400 dark:active:bg-purple-700 {path === '/command' && 'border-b-2'} p-2"
             >
-                <img src={command} alt="Flow" class="w-6 h-4 object-scale-down" />
+                <img src={command} alt="Flow" draggable="false" class="w-6 h-4 object-scale-down" />
                 <div class="z-50 absolute -bottom-10 py-1 px-2 left-1/2 -translate-x-1/2 bg-gray-700 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:delay-150 duration-150 shadow-2xl transition-all">
                     Commands
                 </div>
             </a>
+            {/if}
         </div>
         <div class="h-8 flex flex-row items-center justify-center gap-1">
             {#if currentFlow.value?.started}
@@ -216,7 +248,7 @@
             <Dropdown
                 items={['Log out', 'Edit SSH settings']}
                 direction="right"
-                onselect={(v) => (v === 0 && ((auth.value.username = null), saveAll(), goto('/'))) || (v === 1 && (opensshsettings = true))}
+                onselect={(v) => (v === 0 && ((auth.value.username = null), app.value.pageActions = [], app.value.status = "", saveAll(), goto('/'))) || (v === 1 && (opensshsettings = true))}
                 class="mr-2 select-none text-sm bg-black/0! hover:bg-purple-700! px-1! py-0!"
             >
                 {auth.value.username}@hackclub.app 
@@ -239,11 +271,11 @@
 </div>
 <div class="h-(--bottom-bar) z-50 bg-purple-50 dark:bg-purple-950 flex flex-row items-center backdrop-blur-sm" data-tauri-drag-region>
     {#if app.value.status}
-        <div class="text-xs mb-0.5 ml-5">
+        <div class="text-xs mb-0.5 mx-5">
             {app.value.status}
         </div>
     {/if}
-    <div class="text-xs mb-0.5 ml-5">
+    <div class="text-xs mb-0.5">
         {#each app.value.pageActions as [name, action]}
             <button class="inline-block px-2 cursor-pointer underline" onclick={async () => await action()}>
                 {name}

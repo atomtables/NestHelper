@@ -7,6 +7,7 @@
 
     onMount(() => {
         app.value.status = '';
+        app.value.pageActions = [];
     });
 </script>
 

@@ -1,0 +1,12 @@
+{
+  "tasks" : [
+    {
+      "name" : "tauri dev",
+      "workingDirectory" : ".",
+      "command" : "npm run tauri dev"
+    }
+  ],
+  "project" : {
+    "projectName" : "NestHelper"
+  }
+}

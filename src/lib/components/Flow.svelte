@@ -5,7 +5,10 @@
     import { cubicOut, quartInOut, quintIn, quintInOut } from 'svelte/easing';
     import Button from '$lib/components/generic/Button.svelte';
     import { emit } from '@tauri-apps/api/event';
-    import { currentFlow } from '$lib/state/states.svelte.js';
+    import { currentFlow, filesystem } from '$lib/state/states.svelte.js';
+    import { save } from '@tauri-apps/plugin-dialog';
+    import { create } from '@tauri-apps/plugin-fs';
+    import { alert } from './generic/Dialog.svelte';
 
     let popShows = $state({});
     function hideAll(i) {
@@ -46,18 +49,47 @@
                         <div class="text-xs text-neutral-300">{task.description || ''}</div>
                     </div>
                 </div>
-                <Button class="p-2 rounded-full" onclick={() => ((popShows[i] = !popShows[i]), hideAll(i))}>Output</Button>
+                <Button class="p-2 rounded-full" bind:active={popShows[i]} onclick={() => ((popShows[i] = !popShows[i]), hideAll(i))}>Output</Button>
                 {#if window.matchMedia('(min-width: 40rem)').matches && popShows[i]}
-                    <div class="absolute flex flex-col overflow-scroll scroll-auto bg-neutral-200 dark:bg-neutral-900 right-28 h-48 w-96 lg:w-4/5 p-5 z-50 shadow-2xl origin-right" transition:scale={{ duration: 200, easing: quartInOut }}>
-                        {#each task.outputArr as output}
-                            {#if output.file === 'stdout'}
-                                <pre>{output.output}</pre>
-                            {:else if output.file === "stderr"}
-                                <pre class="text-red-500">{output.output}</pre>
-                            {:else}
-                                {@html output.output}
-                            {/if}
-                        {/each}
+                    <div
+                        class="absolute flex flex-col bg-neutral-200 dark:bg-neutral-900 right-28 {currentFlow.value.tasks.length === i + 1 && '-bottom-8'} h-48 w-96 lg:w-4/5 z-50 shadow-2xl origin-right"
+                        transition:scale={{ duration: 200, easing: quartInOut }}
+                    >
+                        <div class="bg-gray-700 px-5 py-1 shadow-2xl text-sm">
+                            <button
+                                class="hover:underline"
+                                onclick={async () => {
+                                    let path = await save({
+                                        defaultPath: `output-${task.task}.txt`,
+                                        filters: [
+                                            {
+                                                name: 'Text Files',
+                                                extensions: ['txt'],
+                                            },
+                                        ],
+                                    });
+                                    try {
+                                        const file = await create(path);
+                                        await file.write(new TextEncoder().encode(task.output));
+                                        await file.close();
+                                    } catch (e) {
+                                        console.error('Error saving file:', e);
+                                        await alert('Error', `There was an error saving the file: ${e.message}.`);
+                                    }
+                                }}>save</button
+                            >
+                        </div>
+                        <div class="flex flex-col px-5 py-5 overflow-scroll scroll-auto">
+                            {#each task.outputArr as output}
+                                {#if output.file === 'stdout'}
+                                    <pre>{output.output}</pre>
+                                {:else if output.file === 'stderr'}
+                                    <pre class="text-red-500">{output.output}</pre>
+                                {:else}
+                                    {@html output.output}
+                                {/if}
+                            {/each}
+                        </div>
                     </div>
                 {/if}
             </div>
@@ -71,9 +103,24 @@
 </div>
 
 {#if Object.entries(popShows).find(([k, v]) => v) && !window.matchMedia('(min-width: 40rem)').matches}
-    <div class="absolute p-8 top-0 right-0 left-0 bottom-0" onclick={() => (popShows = {})} role="dialog" tabindex="-1" onkeypress={(e) => e.key === 'Escape' && (popShows = {})}>
-        <div class="p-5 flex flex-col overflow-scroll scroll-auto h-full w-full z-50 shadow-2xl bg-neutral-200 dark:bg-neutral-900" transition:scale={{ duration: 200, easing: quartInOut }} onkeypress={(e) => e.key === 'Escape' && (popShows = {})} onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
-            {@html currentFlow.value?.tasks[Object.entries(popShows).find(([k, v]) => v)[0]].output}
+    <div class="fixed z-10000 p-8 top-0 right-0 left-0 bottom-0" onclick={() => (popShows = {})} role="dialog" tabindex="-1" onkeypress={(e) => e.key === 'Escape' && (popShows = {})}>
+        <div
+            class="p-5 flex flex-col overflow-scroll scroll-auto h-full w-full z-50 shadow-2xl bg-neutral-200 dark:bg-neutral-900"
+            transition:scale={{ duration: 200, easing: quartInOut }}
+            onkeypress={(e) => e.key === 'Escape' && (popShows = {})}
+            onclick={(e) => e.stopPropagation()}
+            role="dialog"
+            tabindex="-1"
+        >
+            {#each currentFlow.value?.tasks[Object.entries(popShows).find(([k, v]) => v)[0]].outputArr as output}
+                {#if output.file === 'stdout'}
+                    <pre>{output.output}</pre>
+                {:else if output.file === 'stderr'}
+                    <pre class="text-red-500">{output.output}</pre>
+                {:else}
+                    {@html output.output}
+                {/if}
+            {/each}
         </div>
     </div>
 {/if}

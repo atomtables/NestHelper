@@ -18,7 +18,7 @@
                 >output: {'{'}
     stdout: string,
     stderr: string
-}[]</code
+{'}'}[]</code
             ></pre>
     </div>
     <div>Indices are based on the placement of the task. The first task will have an index of zero and the second: 1, etc.</div>
@@ -41,15 +41,15 @@
         <pre class="overflow-x-auto"><code class="language-javascript"
                 >async function fetchNoCors(url: string, options: {'{'}
     method?: string,
-    headers?: {'{'} [header: string]: string },
+    headers?: {'{'} [header: string]: string {'}'},
     body?: string
-} = {'{'}}): Promise&lt;{'{'}
+{'}'} = {'{'}{'}'}): Promise&lt;{'{'}
     ok: boolean,
     status: number,
-    headers: {'{'} [header: string]: string },
-    text: () => Promise&lt;string&gt;,
-    json: () => Promise&lt;any&gt;
-}&gt;</code
+    headers: {'{'} [header: string]: string {'}'},
+    text: () =&gt; Promise&lt;string&gt;,
+    json: () =&gt; Promise&lt;any&gt;
+{'}'}&gt;</code
             ></pre>
     </div>
 </div>

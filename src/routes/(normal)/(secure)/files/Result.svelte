@@ -4,7 +4,7 @@
     import file from '$lib/assets/file.png';
     import Input from '$lib/components/generic/Input.svelte';
     import Button from '$lib/components/generic/Button.svelte';
-    import { alert } from '$lib/components/generic/Dialog.svelte';
+    import { alert, prompt } from '$lib/components/generic/Dialog.svelte';
     import { app, filesystem, type FileFolder } from '$lib/state/states.svelte';
     import { confirm } from '$lib/components/generic/Dialog.svelte';
     import { Command } from '$lib/conn/Command';
@@ -12,6 +12,8 @@
     import { supportedBinary, supportedImage } from '$lib/helpers/monaco';
     import ImageFile from '$lib/components/viewers/ImageFile.svelte';
     import BinaryFile from '$lib/components/viewers/BinaryFile.svelte';
+    import { mount, unmount } from 'svelte';
+    import RightClickContext from './RightClickContext.svelte';
 
     const sort = (children: FileFolder) => Object.entries(children || {}).sort(([a, x], [b, y]) => (x.type === 'folder' && y.type === 'folder' ? a.localeCompare(b) : x.type === 'folder' ? -1 : y.type === 'folder' ? 1 : a.localeCompare(b)));
 
@@ -29,6 +31,10 @@
 
     const loadFile = async () => {
         let filePath = filesystem.value.currentFolder.join('/') + '/' + selectedFile[0];
+        if (filesystem.value.fileData[filePath]) {
+            console.log($state.snapshot(filesystem.value.fileData[filePath]));
+            filesystem.value.fileData[filePath].type = selectedFileType;
+        }
         app.value.status = `Loading file: ${filePath}`;
         if (filesystem.value.fileData[filePath]?.deletedFile) {
             await alert('File deleted', 'You have marked this file for deletion. Undo the deletion to load it.');
@@ -42,11 +48,15 @@
         }
         try {
             let output = await Command(read(filePath));
-            filesystem.value.fileData[filePath] = {
+            let val = filesystem.value.fileData[filePath] || {
                 type: selectedFileType,
                 original: new Uint8Array(JSON.parse(output.stdout)),
                 modified: new Uint8Array(JSON.parse(output.stdout)), // two instances
             };
+            val.type = selectedFileType;
+            val.original = new Uint8Array(JSON.parse(output.stdout));
+            val.modified = new Uint8Array(JSON.parse(output.stdout)); // two instances
+            filesystem.value.fileData[filePath] = val;
             currentFilePath = filePath;
             app.value.status = `File loaded: ${filePath}`;
         } catch (e) {
@@ -95,6 +105,56 @@
         let arr2 = filesystem.value.fileData[filePath].modified;
         return !(arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]));
     };
+
+    const navigateToNew = (key, value) => {
+        (value.type === 'folder'
+            ? () => {
+                  folderPath.push(key);
+              }
+            : () => {
+                  selectedFile = [key, value];
+                  selectedFileType = supportedBinary(key) ? 2 : supportedImage(key) ? 1 : 0;
+                  if (filesystem.value.fileData[folderPath.join('/') + '/' + key] && !filesystem.value.fileData[folderPath.join('/') + '/' + key]?.deletedFile) {
+                      currentFilePath = folderPath.join('/') + '/' + key;
+                  } else {
+                      currentFilePath = null;
+                  }
+              })();
+    };
+
+    const rightClickMenu = async (e, key, value) => {
+        e.preventDefault();
+        let element = document.createElement('div');
+        let component: RightClickContext;
+        let props = $state({
+            file: [key, value],
+            mouseX: e.clientX,
+            mouseY: e.clientY,
+            options: ['Rename'],
+            onoptionclicked: async (i) => {
+                console.log(folderPath.join('/'), key, value);
+                unmount(component);
+                if (i === 0) {
+                    let newName = await prompt('Rename file', 'Enter the new name you would like to give for the file ' + key);
+                    if (newName) {
+                        let val = filesystem.value.fileData[folderPath.join('/') + `/${key}`] || {
+                            type: null,
+                            original: new Uint8Array([]),
+                            modified: new Uint8Array([]),
+                            renamedFile: [true, filesystem.value.currentFolder.join('/') + '/' +newName],
+                        };
+                        val.renamedFile = [true, filesystem.value.currentFolder.join('/') + '/' +newName];
+                        filesystem.value.fileData[folderPath.join('/') + `/${key}`] = val;
+                    }
+                }
+            },
+        });
+        document.body.appendChild(element);
+        component = mount(RightClickContext, {
+            props,
+            target: element,
+        });
+    };
 </script>
 
 <div class="w-full h-full flex flex-row flex-nowrap inset-0">
@@ -118,27 +178,33 @@
                            {fileWasModified(folderPath.join('/') + `/${key}`) && 'text-amber-500'}
                            {filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.newFile && 'text-green-500'}
                            {filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.deletedFile && 'text-gray-500'}
+                           {filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.renamedFile?.[0] && 'text-yellow-500'}
                            rounded-lg cursor-pointer p-1"
-                onclick={value.type === 'folder'
-                    ? () => {
-                          folderPath.push(key);
-                      }
-                    : () => {
-                          selectedFile = [key, value];
-                          selectedFileType = supportedBinary(key) ? 2 : supportedImage(key) ? 1 : 0;
-                          if (filesystem.value.fileData[folderPath.join('/') + '/' + key] && !filesystem.value.fileData[folderPath.join('/') + '/' + key]?.deletedFile) {
-                              currentFilePath = folderPath.join('/') + '/' + key;
-                          } else {
-                              currentFilePath = null;
-                          }
-                      }}
+                onclick={() => navigateToNew(key, value)}
+                oncontextmenu={(e) => rightClickMenu(e, key, value)}
             >
                 {#if value.type === 'folder'}
                     <img src={folder} alt="folder" class="w-4" />
                     <div class="text-ellipsis overflow-x-clip whitespace-nowrap">{key}</div>
                 {:else}
                     <img src={file} alt="folder" class="w-4" />
-                    <div class="text-ellipsis overflow-x-clip whitespace-nowrap">{key}</div>
+                    <span class="w-full flex flex-row justify-between text-ellipsis overflow-x-clip whitespace-nowrap">
+                        <span class="text-ellipsis overflow-x-clip whitespace-nowrap">{key}</span>
+                        <span class="flex flex-row">
+                            {#if filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.renamedFile?.[0]}
+                            <span class="text-yellow-500 font-bold">R</span>
+                        {/if}
+                        {#if filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.newFile}
+                            <span class="text-green-500 font-bold">N</span>
+                        {/if}
+                        {#if filesystem.value.fileData[folderPath.join('/') + `/${key}`]?.deletedFile}
+                            <span class="text-gray-500 font-bold">D</span>
+                        {/if}
+                        {#if fileWasModified(folderPath.join('/') + `/${key}`)}
+                            <span class="text-amber-500 font-bold">M</span>
+                        {/if}
+                        </span>
+                    </span>
                 {/if}
             </button>
         {/each}
@@ -158,26 +224,38 @@
                 {/if}
             {/key}
         {:else if selectedFile}
+            {@const fileData = filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]}
             <img src={file} alt="file" class="w-16 mb-4" />
             <div class="text-2xl font-bold">{selectedFile[0]}</div>
-            {#if !filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]?.newFile}
+            {#if fileData?.renamedFile?.[0]}
+                <div class="text-yellow-500 font-bold">Renamed to {fileData.renamedFile[1]}</div>
+            {/if}
+            {#if !fileData?.newFile}
                 <div>Size: {selectedFile[1].size} bytes</div>
             {:else}
                 <div class="text-green-500 py-2">New file. Save changes to add it.</div>
             {/if}
-            {#if filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]?.deletedFile}
+            {#if fileData?.deletedFile}
                 <div class="text-red-500 py-2">This file is marked for deletion. Save changes to delete it.</div>
                 <div>
-                    <Button destructive class="text-sm" onclick={() => (filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`].deletedFile = false)}>Undo deletion</Button>
+                    <Button destructive class="text-sm" onclick={() => (fileData.deletedFile = false)}>Undo deletion</Button>
                 </div>
             {:else}
                 <div class="flex flex-row pt-4 gap-2 items-center justify-center w-96">
-                    <Input class="appearance-none w-full flex-2/4" type="dropdown" name="File type" elements={['Text', 'Image', 'Raw Bytes (unimplemented)']} bind:value={selectedFileType} />
+                    <Input class="appearance-none w-full flex-2/4" type="dropdown" name="File type" elements={['Text', 'Image', 'Raw Bytes']} bind:value={selectedFileType} />
                     <Button class="w-full flex-1/2" onclick={loadFile}>Load file</Button>
                 </div>
                 <div>
-                    {#if !filesystem.value.fileData[folderPath.join('/') + `/${selectedFile[0]}`]?.newFile}
+                    {#if !fileData?.newFile}
                         <Button destructive class="text-sm mt-4" onclick={deleteFile}>Delete file</Button>
+                    {:else if fileData?.renamedFile?.[0]}
+                        <Button
+                            destructive
+                            class="text-sm mt-4"
+                            onclick={() => {
+                                fileData.renamedFile = [false, ''];
+                            }}>Undo rename</Button
+                        >
                     {:else}
                         <Button
                             destructive
