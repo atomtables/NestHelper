@@ -1,6 +1,6 @@
 [package]
 name = "NestHelper"
-version = "1.1.0"
+version = "1.1.1"
 description = "helper for nest server"
 authors = ["atomtables", "adithiya.venkatakrishnan@atomtables.dev"]
 license = "MIT"
